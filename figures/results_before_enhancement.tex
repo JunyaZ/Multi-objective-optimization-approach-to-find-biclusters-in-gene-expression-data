@@ -1,0 +1,106 @@
+
+\begin{figure*}[!t]
+  \centering
+
+ \subfigure[Dale Narrow Trend-Preserving ]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rel/New Narrow TP Datasets"}
+  %left, bottom, right and top: 
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rec/New Narrow TP Datasets"}
+    \label{fig:enhancement sub(a)} 
+}
+\subfigure[UniBic Narrow ]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rel/UniBic Narrow Datasets"}
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rec/UniBic Narrow Datasets"}
+    \label{fig:enhancement sub(b)}
+}\\
+\subfigure[Dale Square Trend-Preserving]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rel/New Square TP Datasets"}
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rec/New Square TP Datasets"}
+
+}
+ \subfigure[UniBic Square Trend-Preserving (Type I)]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rel/UniBic Square TP"}
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.235\textwidth]{"images/before enhance_S_rec/UniBic Square TP"}
+
+    }
+     \caption[]{Results of comparative evaluation using new benchmark generalized Trend-Preserving (TP) datasets (Dale Narrow TP \& Dale Square TP) vs. the UniBic benchmark data (Narrow \& Square TP). The MOEA method utilized ASR as the fitness measure.}
+       \label{fig:TP and unibic compara}
+    \end{figure*}
+    
+
+\begin{figure}[!t]
+    \subfigure[Fabia Noisy Datasets]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.23\textwidth]{"images/Noisy_"}    }
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+  \subfigure[Fabia Noisy Free Datasets]{
+    \includegraphics[clip,trim=0.8in 0.8in 1.8in 1.0in,width=0.23\textwidth]{"images/Noise Free_"}}
+    
+    \caption[]{Comparative evaluation of Biclustering Methods on FABIA (Noisy and noise free) datasets. MOEA utilized ASR as its fitness measure. }
+\label{fig:Before enhancement FIBIA}
+\end{figure}
+
+\begin{figure}[!t]
+  \centering
+ \subfigure[Dale Narrow TP]{
+  %left, bottom, right and top: clip,
+  \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/New Narrow TP Datasets"}
+}
+\subfigure[UniBic Narrow ]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Narrow Datasets"}
+}
+\subfigure[Dale Square TP]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/New Square TP Datasets"}
+}
+ \subfigure[UniBic Square TP (Type I) ]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Square TP"}
+    }
+\caption[]{Comparative performance of MOEA using 3 fitness functions ASR, SCS and VE$^T$ on generalized Trend-Preserving (TP) datasets (Dale Narrow TP \& Dale Square TP) vs. the UniBic benchmark data.}
+ \label{fig: ALL datasets NSGA_aa}.
+    \end{figure}
+    
+\begin{figure}[!t]
+\subfigure[Column Constant (Type II) ]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Square Column Const"}
+}
+\subfigure[Row Constant (Type III)]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Square Row Const"}
+} 
+\subfigure[Shift-Scale (Type IV)]{
+%left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+\includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Square Shift-Scale"}
+}
+\subfigure[Shift (Type V)]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Square Shift"}
+    }
+\subfigure[Scale (Type VI) ]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Square Scale"}
+    }
+\subfigure[ Overlap]{
+\includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/UniBic Overlap"}}
+\subfigure[FABIA Noisy]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/Noisy"}
+    }
+    \subfigure[FABIA Noise Free]{
+  %left, bottom, right and top: clip,trim=0.1in 0.1in 0.1in 0.1in,
+    \includegraphics[width=3.8cm, height=3.9cm]{"images/before enhance_NSGA/Noise Free"}
+    }
+\caption[]{Comparative performance of 3 fitness functions ASR, SCS and VE$^T$ with MOEA on  UniBic and FABIA  benchmark datasets. }
+ \label{fig: ALL datasets NSGA}
+\end{figure}
+

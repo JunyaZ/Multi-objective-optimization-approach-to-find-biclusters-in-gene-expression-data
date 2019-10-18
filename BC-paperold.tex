@@ -1,0 +1,106 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{lineno}
+
+%\usepackage{adjustbox}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{comment}
+\usepackage{diagbox}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{makecell}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{subfigure}
+\usepackage{tablefootnote}
+\usepackage{tabularx}
+\usepackage{textcomp}
+\usepackage{threeparttable}
+%\usepackage{color}
+\usepackage{xcolor}
+\usepackage{soul}
+\usepackage{cancel}
+
+% this package must be loaded after (I think) subfigure or it gives a warning
+\usepackage{breqn}
+
+% helpful commands for norms and argmin function
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\argmin}[1]{\underset{\scalebox{0.5}{\parbox{50pt}{\centering $#1$}}}{\text{argmin}}}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+% suppress the half a billion LaTeX warnings for over/underfull hboxes
+\hbadness=10000
+\hfuzz=1000pt
+
+%%% Begin ...
+\IEEEoverridecommandlockouts
+\IEEEpubid{\makebox[\columnwidth]{978-1-7281-1462-0/19/\$31.00~\copyright{}2019 IEEE \hfill}\hspace{\columnsep}\makebox[\columnwidth]{ }}
+
+\begin{document}
+\title{Multi-objective Optimization Approach to find Biclusters in Gene Expression Data}
+
+\author{
+\IEEEauthorblockN{Jeffrey Dale}
+\IEEEauthorblockA{\textit{Computer Science Dept.}  \\
+\textit{Missouri State University}\\
+dale2755@live.missouristate.edu}
+\and
+\IEEEauthorblockN{Junya Zhao}
+\IEEEauthorblockA{\textit{Computer Science Dept.}  \\
+\textit{Missouri State University}\\
+junya009@live.missouristate.edu}
+\and
+\IEEEauthorblockN{Tayo Obafemi-Ajayi}
+\IEEEauthorblockA{\textit{Engineering Program} \\
+\textit{Missouri State University}\\
+tayoobafemiajayi@missouristate.edu}
+}
+
+
+% \IEEEcompsocitemizethanks{
+%     \IEEEcompsocthanksitem J. Dale was with the Department of Computer Science, Missouri State University, Springfield, MO, 65897.
+%     \IEEEcompsocthanksitem J. Zhao is with the Department of Computer Science, Missouri State University, Springfield, MO, 65897.
+%     %
+%     \IEEEcompsocthanksitem T. Obafemi-Ajayi (corresponding author) is with the Engineering Program, Missouri State University, Springfield, MO, 65897.\protect\\
+%     E-mail: tayoobafemiajayi@missouristate.edu
+% }
+% %\thanks{Manuscript received April 19, 2005; revised August 26, 2015.}
+
+        \maketitle
+
+   \begin{abstract}
+      
+     Gene expression levels of organisms are measured by DNA microarrays.
+     Finding biclusters in gene expression matrices provides  invaluable information about effects of disease at the genetic level.
+      These biclusters could identify which genes are up-regulated/down-regulated under certain conditions. This paper investigates a methodology for evolutionary-based biclustering using the NSGA-II algorithm. It also presents an improvement to the recovery and relevance external validation metrics as well as a new method for synthetic data generation for biclustering. Results obtained demonstrate its effectiveness in discovering useful biclusters on varied synthetic data when applied with the average Spearman's rho measure as the fitness function.
+  \end{abstract}
+
+  % Note that keywords are not normally used for peer review papers.
+  \begin{IEEEkeywords}
+  	biclustering, evolutionary algorithm, gene expression data.
+  \end{IEEEkeywords}
+
+  \input{"sections/01-introduction.tex"}
+ 
+ \input{"sections/04-framework.tex"}
+\input{"sections/05-syntheticdata.tex"}
+%   \input{"sections/02-relatedwork.tex"}
+ \input{sections/06-evaluation.tex}
+% \input{sections/07-discussion.tex}
+  \input{sections/08-conclusion.tex}
+  
+    
+    \bibliographystyle{IEEEtran}
+    \bibliography{bmc_article}
+    
+    
+    
+\end{document}

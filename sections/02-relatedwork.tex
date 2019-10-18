@@ -1,0 +1,18 @@
+\section{Related Work}
+\label{sec:related}
+%Discuss different biclustering algorithms proposed... strengths and weaknesses. How does this work differ?
+
+%As mentioned in Section~\ref{sec:introduction}, there are at least 30 biclustering methods present in the literature, with more being devised all the time. 
+%There have been several biclustering algorithms proposed over the past two decades as reviewed in  \cite{prelic2006systematic,eren2012comparative,oghabian2014biclustering,pontes2015biclustering,roy2016analysis}.
+Though multiple EBMs have been proposed in literature, only very few are readily available for implementation such as Evo-Bexpa. 
+The Evolutionary Biclustering based in Expression Patterns (Evo-Bexpa) method ~\cite{pontes2013configurable} combines four criterion (transposed virtual error (VE$^T$), bicluster volume, overlap, gene variance) into a single aggregate objective function by a weighted summation. The configuration of the weights is based on the domain application. For superior performance, it needs to incorporate user preferences based on some prior knowledge regarding the results.
+
+For the empirical evaluation, other non-EBMs with readily available implementation are utilized for comparason. They are briefly described in Table~\ref{tab:algsummary}. 
+These include Cheng \& Church (CC) \cite{cheng2000biclustering}, Iterative Signature Algorithm (ISA) \cite{bergmann2003iterative}, Order-Preserving Submatrices Algorithm (OPSM) \cite{ben2003discovering}, Factor Analysis for Bicluster Acquisition (FABIA)~\cite{hochreiter2010fabia}, Penalized Plaid Model (PPM)~\cite{chekouo2015thepenalized}, UniBic~\cite{wang2016unibic}, and Biclustering based on PAttern Mining Software (BicPAMS)~\cite{henriques2017bicpams}.
+%These algorithms, with readily available implemention, span over two decades and are summarized in Table~\ref{tab:algsummary}. 
+%We focused on these methods, as their implementation were readily available. 
+Given that UniBic is an extension/improvement of the graph-based biclustering method QUBIC~\cite{li2009qubic}, it isn't include QUBIC in the experiments, though it's implementation was publicly available. Likewise, only BicPAMS~\cite{henriques2017bicpams} is included given that it is the most recent improved version of prior pattern mining biclustering algorithms since the initial one: BicPAM \cite{henriques2014bicpam}.
+%, BicSPAM \cite{henriques2014bicspam}, BiP \cite{henriques2015biclustering}, and BicNET \cite{henriques2016bicnet}).
+
+ \input{tables/algorithms-used.tex}
+

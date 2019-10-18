@@ -1,0 +1,54 @@
+\begin{table} [!t]
+	\caption{Summary of Biclustering Algorithms Utilized for Comparison}
+	\label{tab:algsummary}
+	\centering
+	\scalebox{0.8}{
+	\begin{tabular}{p{2cm}p{6cm}p{2cm}}
+		\toprule
+		Algorithm (Year) & Description & Implementation Source \\
+		\midrule
+        CC (2000)
+        & Deterministic greedy algorithm that finds biclusters by minimizing the Mean Squared Residue (MSR) score of a discovered submatrix
+        & Python \cite{Eren2013} \\ \\
+
+        ISA (2003)
+        & Non-deterministic method that discovers biclusters in an iterative manner, even in the presence of noise and overlapping biclusters.
+        & R package \texttt{isa2} \cite{csardi2010modular} \\ \\
+        
+		OPSM (2003)
+		& Deterministic method based on an optimal reordering approach of using a probabilistic model to describe the biclusters.
+		& BicAT \cite{barkow2006bicat} \\ \\
+		
+		FABIA (2010)
+		& A generative multiplicative model for discovering biclusters by assuming a non-Gaussian signal distributions with heavy tails.
+		& Bioconductor \texttt{fabia} \cite{hochreiter2010fabia} \\ \\
+		
+		Evo-Bexpa (2013)
+		& An evolutionary computing approach to the biclustering problem.
+		  Fitness function is based on transposed virtual error, degree of overlap, and gene variance.
+		& Python$^1$ \cite{pontes2013configurable} \\ \\
+		
+		PPM (2015)
+		& A modified extended version of the Bayesian biclustering model.
+		  The PPM method fully accounts for a general overlapping structure.
+		  Parameters in the Penalized Plaid model are found all at once by a dedicated Markov chain Monte Carlo sampler.
+		& Java \cite{chekouo2015thepenalized} \\ \\
+		
+		UniBic (2016)
+		& Applies longest common subsequence algorithm to translate the input data matrix to a rank matrix such that the rows are discretized as rank vectors.
+		& C$^2$ \cite{wang2016unibic} \\ \\
+		
+		BicPAMS (2017)
+		& Aggregate of state-of-the-art pattern mining approaches in biclustering.
+		& Java$^3$ \cite{henriques2017bicpams} \\
+		
+		\bottomrule
+	
+	\end{tabular}}
+	\begin{tablenotes}
+		\tiny
+		\item $^1$Implemented at: https://github.com/clslabMSU $^2$http://sourceforge.net/projects/unibic/
+		\item $^3$http://bicpams.com
+	\end{tablenotes}
+\end{table}
+

@@ -1,0 +1,112 @@
+% \begin{algorithm}
+
+% 	\label{alg:hillclimber}
+%     \caption{Local Search Finisher}
+%   	\begin{algorithmic}[1]
+%     \Statex \hspace{12pt} // \texttt{biclusters}: set of biclusters,BC,  to improve upon.
+    
+%     \Statex \hspace{12pt} // \texttt{f}: List of fitness functions used in evolutionary algorithm.
+    
+%     \Statex \hspace{12pt} // \texttt{ratio}: Float of value $ \geq 1$;   \texttt{bias}: $ \geq 0$
+    
+%     \Statex \hspace{12pt} // \texttt{maxrows}: Maximum number of rows in final bicluster
+    
+%     \Statex \hspace{12pt} // \texttt{maxcols}: Maximum number of columns in final bicluster
+    
+%     	\State \texttt{new biclusters} $\gets \emptyset$
+    	
+%     \For{{\bf each} \texttt{BC} $\in$ \texttt{biclusters}}
+%         \State \texttt{oldfitnesses} $\gets$ $\vec{0}$
+%         \Statex
+%       \For{i = 1 : $|$\texttt{f}$|$}
+%      	        \State \texttt{oldfitnesses[i]} $\gets$ $f_i$(\texttt{BC})
+    	    
+%     	    \Statex
+%     	    \While{($f_i$(\texttt{bicluster}) $<$ \texttt{ratio*oldfitnesses[i]+bias}) for all $i = 1,\dots,|f|$}
+    	        
+%     	        \Statex
+%     	        \For{i = 1 to $|$\texttt{f}$|$}
+%     	            \State \texttt{oldfitnesses[i]}$\gets$ $f_i$(\texttt{bicluster})
+%     	            \Comment Update list of old fitnesses.
+%     	        \EndFor
+    	        
+%     	        \Statex
+%     	        \State $\hat{g} = \argmin{g \in G} \left\{ \norm{f_i(\texttt{bicluster +\ } g) \text{\ for\ } i=1,\dots,|f|\ }_2 \right\}$
+%     	        \Comment Find added gene that hurts fitness the least.
+    	        
+% 	            \State $\hat{s} = \argmin{s \in S} \left\{ \norm{f_i(\texttt{bicluster +\ } s) \text{\ for\ } i=1,\dots,|f|\ }_2 \right\}$
+% 	            \Comment Find added sample that hurts fitness the least.
+	            
+% 	            \State $g_{\text{fit}} = \norm{f_i(\texttt{bicluster +\ } \hat{g}) \text{\ for\ } i=1,\dots,|f|\ }_2$
+% 	            \Comment Fitness of bicluster including best added gene.
+	            
+% 	            \State $s_{\text{fit}} = \norm{f_i(\texttt{bicluster +\ } \hat{s}) \text{\ for\ } i=1,\dots,|f|\ }_2$
+% 	            \Comment Fitness of bicluster including best added sample.
+	            
+% 	            \Statex
+% 	            \If{$g_{\text{fit}} < s_{\text{fit}}$ and \texttt{nrows(bicluster) < maxrows}}
+% 	                \State \texttt{bicluster = bicluster + $\hat{g}$}
+% 	            \ElsIf{$g_{\text{fit}} \ge s_{\text{fit}}$ and \texttt{ncols(bicluster) < maxcols}}
+% 	                \State \texttt{bicluster = bicluster + $\hat{s}$}
+% 	            \Else
+% 	                \State {\bf break}
+% 	            \EndIf
+% 	            \Statex
+	            
+%     	    \EndWhile
+    	    
+%     	    \State \texttt{newbiclusters = newbiclusters $\cup$ bicluster}
+%     	    \Statex
+%     	\EndFor
+%   	\end{algorithmic}
+% \end{algorithm}
+
+
+\begin{algorithm}
+
+	\label{alg:hillclimber}
+    \caption{Pseudocode: Local Search Finisher}
+  	\begin{algorithmic}[1]
+    \Statex \hspace{15pt} \texttt{\bf Biclusters}: Set of biclusters,BC, to improve upon;     \Statex \hspace{15pt} \texttt{f}: List of fitness functions, length=$|$\texttt{\bf f}$|$
+     \Statex \hspace{15pt}  \texttt{\bf ratio}: Float of value $ \geq 1$;   \texttt{\bf bias}: $ \geq 0$
+     \Statex \hspace{15pt} \texttt{\bf maxrows; maxcols}: Maximum number of rows, cols in final bicluster ; 
+    \Statex
+    	\State \texttt{newbiclusters} $\gets \emptyset$
+    	\For{{\bf each} \texttt{BC} $\in$ \texttt{biclusters}}
+    	    \State \texttt{oldfitnesses} $\gets$ $\vec{0}$
+    	    \Statex
+    	    \For{i = 1 to $|$\texttt{f}$|$}
+        	        \State \texttt{oldfitnesses[i]}$\gets$ $f_i$(\texttt{BC})
+    	    \EndFor
+    	    \Statex
+    	    \While{($f_i$(\texttt{BC}) $<$ \texttt{ratio*oldfitnesses[i]+bias}) $\forall i = 1,\dots|f|$}
+    	        \Statex
+    	        \For{i = 1 to $|$\texttt{f}$|$}
+    	            \State \texttt{oldfitnesses[i]}$\gets$ $f_i$(\texttt{BC})
+    	           % \Comment Update list of old fitnesses.
+    	        \EndFor
+    	        \Statex
+    	        
+    	        \State $\hat{g} = \argmin{g \in G} \left\{ \norm{f(\texttt{bicluster +\ } g)}_2 \right\}$ \Comment Find best gene to add
+    	       \Statex \hspace{20pt} 
+	            \State $\hat{s} = \argmin{s \in S} \left\{ \norm{f(\texttt{bicluster +\ } s)}_2 \right\}$
+	            \Comment Find best sample to add
+	            \State $g_{\text{fit}} = \norm{f(\texttt{bicluster +\ } \hat{g})}_2$
+	            \Comment Compute fitness of bicluster w/ gene 
+	            \State $s_{\text{fit}} = \norm{f(\texttt{bicluster +\ } \hat{s})}_2$
+	            \Comment Compute fitness of bicluster w/ sample
+	            \Statex
+	            \If{$g_{\text{fit}} < s_{\text{fit}}$ and \texttt{nrows(bicluster) < maxrows}}
+	                \State \texttt{bicluster = bicluster + $\hat{g}$}
+	            \ElsIf{$g_{\text{fit}} \ge s_{\text{fit}}$ and \texttt{ncols(bicluster) < maxcols}}
+	                \State \texttt{bicluster = bicluster + $\hat{s}$}
+	            \Else
+	                \State {\bf break}
+	            \EndIf
+	            \Statex
+    	    \EndWhile
+    	    \State \texttt{newbiclusters = newbiclusters $\cup$ BC}
+    	    \Statex
+    	\EndFor
+  	\end{algorithmic}
+\end{algorithm}

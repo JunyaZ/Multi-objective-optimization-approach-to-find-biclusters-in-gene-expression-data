@@ -1,0 +1,164 @@
+\section{Related Work}
+
+
+
+%Discuss different biclustering algorithms proposed... strengths and weaknesses. How does this work differ?
+
+%As mentioned in Section~\ref{sec:introduction}, there are at least 30 biclustering methods present in the literature, with more being devised all the time. 
+There have been several biclustering algorithms proposed over the past two decades as reviewed in  \cite{prelic2006systematic,eren2012comparative,oghabian2014biclustering,pontes2015biclustering,roy2016analysis}.%
+In this section, we present an overview of the biclustering methods that we empirically evaluated as a comparison for the MOEA biclustering method. Given the focus of utilizing an evolutionary algorithm in this work, we present an indepth review of evolutionary-based biclustering methods (EBM).
+We also describe benchmark datasets that have been proposed for biclustering algorithm evaluation in Section \ref{sec:syndata-review}.
+
+\subsection{Review of Biclustering Methods for Comparison}
+\label{sec:review-methods}
+
+The 7 non-evolutionary-based biclustering methods empirically evaluated in this work include Cheng \& Church (CC) \cite{cheng2000biclustering}, Iterative Signature Algorithm (ISA) \cite{bergmann2003iterative}, Order-Preserving Submatrices Algorithm (OPSM) \cite{ben2003discovering}, Factor Analysis for Bicluster Acquisition (FABIA)~\cite{hochreiter2010fabia}, Penalized Plaid Model (PPM)~\cite{chekouo2015thepenalized}, UniBic~\cite{wang2016unibic}, and Biclustering based on PAttern Mining Software (BicPAMS)~\cite{henriques2017bicpams}.
+These algorithms span over two decades and are summarized in Table~\ref{tab:algsummary}. We focused on these methods, as their implementation were readily available. 
+Given that UniBic is an extension/improvement of the graph-based biclustering method QUBIC~\cite{li2009qubic}, we did not include QUBIC in our analysis, though it's implementation was publicly available. Likewise, given that BicPAMS~\cite{henriques2017bicpams} is the most recent pattern mining algorithms and an improved version of prior pattern mining biclustering algorithms since the initial introduction of BicPAM \cite{henriques2014bicpam}, we only included that method. 
+It builds on their prior methods including BicSPAM \cite{henriques2014bicspam}, BiP \cite{henriques2015biclustering}, and BicNET \cite{henriques2016bicnet}.
+
+ \input{tables/algorithms-used.tex}
+\subsubsection*{Evolutionary-based Biclustering Methods }
+
+Evolutionary learning is commonly regarded as an efficient metaheuristic technique and has been successfully used for various optimization problems because of its excellent exploratory capability in a global search space ~\cite{huang2012parallelized}.
+Given that the biclustering problem can be viewed as a combinatorial optimization problem, multiple evolutionary-based biclustering methods (EBMs) have been proposed in literature.
+The overarching design scheme for the EBM is to insert the biclustering techniques into the evolutionary learning framework.
+Starting with a initial population, the EBM selects some individuals and recombines them using crossover and/or mutation to generate a new population.
+The process is repeated for a number of generations until termination conditions are met, such as maximum number of generations, satisfactory fitness values, or some number of generations without making sufficient improvements.
+EBMs define one or more fitness functions, which measure how well a candidate solution solves the specified problem.
+
+Gallo et al. proposed Biclustering via a Hybrid Evolutionary Algorithm (BiHEA) \cite{gallo2009bihea}. This is an extension of the first reported EBM - Bleuler-B~\cite{bleuler2004ea}.
+It applies a hybrid approach that integrates evolutionary algorithms with local search based on the CC biclustering algorithm \cite{cheng2000biclustering} to solve the biclustering problem.
+The goal of BiHEA is to generate near optimal biclusters with coherent values following an additive model.
+BiHEA's fitness functions incorporate size, mean square residue (MSR) score, and variance of the biclusters.
+It utilizes a two-point crossover operator rather than the single-point crossover of Bleuler-B, also including an elitism and recovery procedure.
+%In their method, each individual represents one bicluster, which is encoded by a fixed size binary string, the string is structured by combing a gene string with a condition string, if the gene or condition is included in a bicluster, the corresponding bit is set to 1, otherwise 0. They used the local search to return the set of individuals in the last population as the output.
+%The novelty of this algorithm is that they added elitism procedure and recovery procedure. 
+The elitism phase involves the selection of a set of best biclusters that do not overlap in a certain threshold and passing them to the next generation.
+Thus, they can control the diversity in the genotypic space.
+The recovery phase ensures that the best generated biclusters are kept in the population throughout the process of evolution.
+%During the recovery phases, in order to avoid the good solutions were misplaced through the generation, so they use this step to keep the best generated bicluster through the entire evolutionary process.
+%In addition, they used two-point crossover operator instead  of one point, because the latter would prohibit certain combinations of bits to be crossed over together.
+ 
+% ***from CBEB paper
+%Bleuler et al. [29] incorporated the same heuristic as Cheng and Church’s local search into a single-objective evolutionary framework to improve the biclustering outcome. Each individual represented a bicluster and a greedy iterative local search is performed to refine the bicluster. The fitness of individuals is quantitatively measured by mean square residual (MSR) score. Due to the conflicting requirements between the bicluster size and the homogeneity measure, Mitra and Banka [30] further proposed a multiobjective evolutionary biclustering algorithm involving multiple criteria in conjunction with local search heuristics. In addition, Divina and Aguilar-Ruiz [31] proposed an EA-based biclustering approach to finding biclusters with maximum size using the MSR measure. The authors paid special attention to looking for biclusters with large variation
+%***
+
+The Condition-Based Evolutionary Biclustering (CBEB) algorithm~\cite{huang2012parallelized} is another hybrid approach which integrates hierarchical clustering with evolutionary algorithm.
+The hierarchical clustering is applied to divide the condition dimension (i.e. the columns) search space into subspaces.
+By parallelizing the search process, they are able to improve the efficiency and effectiveness of the evolutionary algorithm.
+CBEB utilizes an ''expand and merge`` method to combine the biclusters from each subset of conditions into larger biclusters.
+Similar to BiHEA, their fitness function is also based on the MSR score.
+
+The Evolutionary Biclustering based in Expression Patterns (Evo-Bexpa) method ~\cite{pontes2013configurable} combines four criterion (transposed virtual error (VE$^T$), bicluster volume, overlap, gene variance) into a single aggregate objective function by summation.
+VE$^T$ is an internal validation metric for evaluating the quality of a bicluster.
+%According to ~\cite{pontes2013configurable}, VE$^t$ is useful in detecting shifting and scaling patterns, however in this work, we demonstrate it otherwise.
+A key strength of their method is that the fitness function includes weights for all the criterion.
+The weight values can be configured for the domain application.
+The drawback is that it incorporates user preferences based on some characteristics of the results. Thus, a level of prior knowledge regarding the outcome is required, which is not the case with unsupervised learning methods.
+Similar to semi-supervised learning, it performs very well when prior information is included on the location of biclusters.
+%In addition, their fitness function is combined by the four terms and each terms are weighted (except for the VE value). The VE value for the bicluster is divided by the VE value of the whole microarray, and the weights of the other terms of the fitness function is recomputed when using a different microarray. In their fitness function, all the weights have been designed in the same way, a lower value of a certain weight will result on biclusters with lower values of its characteristic. In this way, other objectives can also be easily incorporated into the search, as well as any objective may be ignored by setting its weight to zero. 
+
+Curry et al. introduced the customizable framework GABI~\cite{curry2014framework} for subspace pattern mining suited to high-dimensional datasets.
+The key innovation of the GABI approach is to utilize rule-based feature selection into the bicluster scoring process.
+They calculate a bicluster score from any list of selected columns, and use a feature selection function to return the list of bicluster rows from any list of selected columns.
+GABI is designed as a modular implementation, enabling customization of the fitness function.
+A drawback is that the feature selection method has to be tailored to each dataset encountered, thus requiring prior knowledge about outcome, similar to Evo-Bexpa.
+%However, it is a method that is highly insular for the domain application.
+%The method poorly generalizes for other gene expression datasets, in which case it is hard to define what features should be integrated into the framework. 
+%They argued that through custom specification of this component of the algorithm, any bicluster models can be implemented and evaluated within the GABI framework. This means that the GABI framework can be used to perform subspace pattern mining for a whole range of tasks. 
+
+%BiCAMWI~\cite{lakizadeh2016bicamwi} is another EBM designed for analysis of large scale protein-protein interaction (PPI) networks from time series gene expression data.
+%They incorporate a novel fitness function, Discretized Column-based Measure (DCM), which is based on discretization of conditions to evaluate the quality of biclusters.
+%They used four different discretization techniques: simple threshold, mean and standard deviation, transitional state discrimination, and variation between time-points.
+%Each of these replace the continuous expression value of the data matrix by a symbol, D/N/U, where D implies down-regulation, N no-regulation and U up-regulation.
+%The fitness function (DCM score) is formulated using a penalty factor, the number of genes in bicluster, and the frequency of each discrete symbol D, N or U.
+%The higher score give better quality of biclusters.
+%Their method is more efficient in retrieving the significant dynamic subnetworks and improving the accuracy of protein detection.
+
+A very recent EBM proposed in literature is the Evolutionary-based biclustering algorithm (EBIC)~\cite{orzechowski2018ebic}.
+It is a hybrid approach that employs a different representation for the biclusters: a series of column indices instead of combinations of a set of rows and a set of columns.
+The generated population are stored in a compressed bicluster format (CBF).
+The CBF format is able to determine the starting positions of each of the biclusters and holds indexes of columns of biclusters.
+Similar to CBEB, they divide the data matrix into chunks for more efficient parallelized search.
+In contrast, EBIC conducts the parallel search using multiple GPUs.
+To obtain diversity of biclusters obtained, they limit the probability of selecting individuals that share columns with those already added to the new generation.
+EBIC's fitness function includes a penalty factor to promote population diversity, which increases the likelihood of individuals with underrepresented columns to be place in the population.
+
+%%% I don't feel like this paragraph is relevant enough to our paper, since it is very long as is
+%%% --Jeff
+%In EBIC, they dispatched chunks of the input data to multiple GPUs and calculated the quality of biclusters in parallel, which make EBIC very efficient computationally.
+%In order to speed up efficiency, Duarte et.al~\cite{duarte2018fpga} applied Field-Programmable Gate Array (FPGA)-based architectures to accelerate QUalitative BIClustering (QUBIC) algorithms.
+%Their work introduced a parallel architecture for QUBIC based on an heterogeneous system composed by a FPGA and a CPU that communicate through the OpenCL framework.
+%Results showed a reduction up to 29x in the execution time of the functions accelerated on the FPGA when compared to a software-only implementation.
+%However, in this work, our focus is on the effectiveness of methodology not efficiency.
+%These GPU/accelerator frameworks could be applied to the methods proposed in this work for enhanced and more efficient results.
+
+
+%\textbf{Junya: include statement about how there are other GPU enhanced/accelerator methods for biclustering, to speed up efficiency - cite the other paper you review. In this work, our focus is on the effectiveness of methodology not efficiency. Beyond scope of this work. These GPU/accelerator frameworks could be applied to the methods proposed in this work for enhanced and more efficient results.}
+
+\subsection{Synthetic Benchmark Dataset Generation for Biclustering Algorithms}
+\label{sec:syndata-review}
+
+It is inherently challenging to ensure a fair comparison of biclustering approaches, since every method uses different model assumptions which may work well in certain scenarios and fail in others~\cite{prelic2006systematic}.
+According to Prelic et al., it's important to define a common setting that reflects the general basis of the majority of biclustering studies available~\cite{prelic2006systematic}.
+Hence, the use of properly defined models of synthetic data generation for evaluation of the multiple algorithms is essential.
+
+Mukhopadhyay et al.\cite{mukhopadhyay2010biclustering} defined several models of biclusters: constant, constant row, constant column, additive pattern, multiplicative pattern, and additive-multiplicative patterns.
+All of these models can be considered as special cases of the additive-multiplicative model.
+
+%, we will only discuss this model in detail. Biclusters with both additive and multiplicative patterns are of the form
+%\begin{equation}
+%	m_{ij} = \pi b_i q_j + a_i + p_j
+%\end{equation}
+%where $\pi$ is a constant, $b_i$ and $a_i$ are constant for each row, and $q_j$ and $p_j$ are constant for each column.
+
+%two types of bicluster concepts: biclusters with constant expression
+%values and biclusters following an additive model where the
+%expression values are varying over the conditions. The former
+%type can be used to test methods designed to identify—according
+%to the terminology in Madeira and Oliveira (2004)—biclusters with
+%constant and coherent values, while the latter type, where the
+%expression values show the same trend for all genes included, serves
+%as a basis to validate algorithms tailored to biclusters with coherent
+%values and coherent evolutions. Concerning the biclustering struc-
+%ture, we consider two scenarios: (1) multiple biclusters without any
+%overlap in any dimension and (2) multiple biclusters with overlap.
+
+Two other, often more biologically relevant, bicluster models are order-preserving and trend-preserving biclusters~\cite{wang2016unibic}.
+Order preserving biclusters are biclusters whose rows have equal ranks.
+If one were to replace each row of an order-preserving biclusters with the rank vectors of those rows, the result would be a column-constant bicluster (in the absence of noise).
+Trend-preserving biclusters extend order-preserving biclusters to allow ranks of each row to be reversed, capturing both strong positive and strong negative correlation between rows.
+These patterns can be understood visually by Figure~\ref{fig:biclustermodels}.
+
+% \input{figures/bicluster-patterns}
+
+Another important distinction is between sequential and non-sequential biclusters. Sequential biclusters are a special case of the biclustering problem where all of the rows and columns in the bicluster are in order and adjacent to each other. For example, a sequential bicluster might contain rows 1, 2, 3, 4, and 5 with columns 3, 4, 5, and 6. This work primarily deals with sequential biclusters, however the generalization of an algorithm for finding sequential vs. non-sequential biclusters is trivial provided the algorithm doesn't utilize the fact that biclusters are sequential.
+
+%***Data preprocessing techniques that translate data into format that these models could be applied on.
+It is important to note that some biclustering algorithms require data preprocessing before they can operate.
+Several common preprocessing methods of gene expression data are surveyed by Irizarry et al.~\cite{irizarry2003exploration}.
+Among the methods of normalization are log transformations, z-scores, and min-max scaling.
+
+Prelic et al.~\cite{prelic2006systematic} introduced an artificial model, similar to the model in~\cite{ihmels2002revealing}, that generates data to investigate the capability of the methods to recover known groupings, focusing on constant and additive (coherent) bicluster models.
+They also considered two scenarios of biclustering structure: (1) multiple biclusters without any overlap in any dimension and (2) multiple biclusters with overlap.
+They also examine the effect of noise by adding Gaussian noise to each cell of the original gene expression matrix.
+The major drawback is that the datasets are small (50-100 genes) and have equally sized biclusters.
+
+Hochreiter et al.~\cite{hochreiter2010fabia} introduced a set of simulated datasets to attempt to match the characteristics of gene expression data better. The overall model for the generated  biclusters and additive noise is :
+\begin{equation}
+	X =  \sum_{i=1}^{\rho }\lambda_{i} z_{i}^{T} +\Upsilon  =\Lambda Z +\Upsilon 
+\end{equation}
+where the outer product $\lambda z_{}^{T}$ of two sparse vectors results in a matrix with a bicluster, and $\Upsilon \in R^{n*l}$ is additive noise. Their datasets include 100 independent datasets that were generated by a multiplicative model. Each dataset includes four files (X, Y, L, Z). The X file consists of a 1000 (genes) *100 (samples) matrix with biclusters that generated by the outer product of two sparse vectors. The Y file consists of a matrix with biclusters that have additive noise. The L file contains the prototype vectors as columns, and the Z file contains the transposed factors as rows. Their FABIA datasets match the characteristics of gene expression data well, especially in terms of the heavy tails. However, the generated data is mainly according to a multiplicative model structure, they did not consider any other bicluster structure model. %There is another dataset available on their website that utilizes the additive model structure.
+Another set of benchmark data generation focuses on inserting perfect biclusters with shift or scaling tendencies~\cite{mukhopadhyay2010biclustering}, or a combined pattern of both~\cite{pontes2013configurable} into artificial data matrices with uniform random generation.
+
+
+Wang et al.~\cite{wang2016unibic} introduced another benchmark dataset generated with the BiBench framework~\cite{eren2012comparative}.
+Their dataset consists of 6 groups of square bicluster structures (trend-preserving, column-constant, row-constant, shift-scale, shift, scale) as well as 3 overlapping datasets and 3 narrow datasets for a total of 119 datasets.
+Square biclusters have the same number of genes and conditions in each bicluster while narrow biclusters contain many more genes than conditions.
+Overlapping biclusters are biclusters that share one or more genes or conditions. 
+According to Wang et al.~\cite{wang2016unibic}, biologically, genes which are co-regulated under a subset of experimental conditions exhibit expression patterns which are trend-preserving, but may be quite different in value under those conditions.
+Here a gene expression pattern refers to the vector of expression values of the gene under the specific conditions.
+Two gene expression patterns are said to be trend-preserving if and only if their corresponding vectors are either order-preserving or order-reversing.
+However, there is always the concern of whether the synthetic data generation captures the complexity of real applications. 
+%cite our icpram work too

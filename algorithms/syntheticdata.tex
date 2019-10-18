@@ -1,0 +1,38 @@
+
+\scalebox{0.8}{
+    \begin{minipage}{\linewidth}
+\begin{algorithm}[H]
+  \caption{Trend-Preserving Biclusters Data Generator}
+	\label{alg:syntheticdata}
+ \begin{algorithmic}
+ 
+   \Statex \texttt{\bf $PD_N$}: Probability distribution of background noise
+   
+    \Statex \texttt{\bf $PD_G$}: Probability distribution of gap sizes in trends (with {\bf nonnegative support})
+   	\Statex \texttt{\bf NumBics}: \texttt{Number of biclusters to implant}
+       \Statex \texttt{\bf BicRows; BicCols}: \texttt{Number of rows,colums in each bicluster}
+    \Statex
+    	\State Generate: matrix $D$ of size \texttt{NRows}$\times$\texttt{NCols} with entries $d_{ij} \sim \texttt{$PD_N$}$.
+                \Repeat
+        	\State Decide $I$ and $J$, {\bf ordered} sets of row and column determine where the bicluster is placed in $D$.
+            \State (Optional: ensure $I$ and $J$ do not overlap with previously implanted biclusters.)
+            \State Find interval $[\texttt{rand\_min}, \texttt{rand\_max}]$ containing middle 95\% of \texttt{$PD_N$} centered at the median.
+            \State Randomly generate $\texttt{trends} \in \left\{-1, 1\right\}^{\texttt{BicCols-1}}$
+            \For{{\bf all} $i \in I$}
+            	\State Randomly generate $\texttt{sign} \in \left\{-1, 1\right\}$.
+            % 	\Comment \texttt{sign = 1} $\to$ same trend, \texttt{-1} $\to$ opposite trend.
+                \State Set $d_{i, J_0}$ to a random sample from \texttt{$PD_G$}.
+                \For{$j = 1$ {\bf to} \texttt{BicCols}}
+                	\State Set $x$ to a random sample from \texttt{$PD_G$}.
+                	\State Set $d_{i, J_j} = d_{i, J_{j-1}} + \texttt{sign}\cdot\texttt{trends[j-1]}\cdot x$
+                	 %\Statex \hspace{52pt} 
+                	 %\Comment Multiplication by $x$ make \texttt{$PD_G$} must have nonnegative support.
+                    \State (Optional: add noise to $d_{i, J_j}$.)
+                \EndFor
+                \State Scale bicluster row $d_{i, J}$ into range $[\texttt{rand\_min}, \texttt{rand\_max}]$ using min-max scaling.
+            \EndFor
+        \Until{NumBics biclusters have been implanted}
+\end{algorithmic}
+\end{algorithm}
+\end{minipage}
+}

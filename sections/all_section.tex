@@ -1,0 +1,701 @@
+\section{Introduction}
+\label{sec:introduction}
+A key challenge in biological data analysis is the characterization of genetic factors that underlie phenotypic differences. 
+As a result of advances in sequencing and DNA array technologies, an enormous number of genetic variants have been identified and cataloged \cite{xia2015networkanalyst}.
+Such data hold great potential to understand how particular genes are expressed in an organism's phenotype, and also how these genes contribute to the organism's susceptibility to a disease or trait.
+An understanding of how to organize, process, and transform these data into useful domain knowledge is crucial.
+Unsupervised learning models are useful in understanding patterns in data, but as the dimensionality of the data grows, the most salient patterns in the data may not be relevant for the specific investigation.
+In gene expression data analysis, the overall hypothesis is that small sets of genes may drive multiple cellular processes and not necessarily span the entire condition subspace \cite{xu2011bartmap}.
+As a result, one-dimensional clustering methods may not uncover optimal/useful local condition patterns of genes.
+%This makes biclustering useful for identifying potentially relevant subspaces in the data.\
+
+Biclustering offers a solution to this problem by performing simultaneous clustering in two dimensions, thus automatically integrating feature selection and clustering without any prior information.
+The relationship between clusters of genes (rows, features) and clusters of samples (columns, conditions) are established in the biclustering process.
+Biclustering methods have been shown to be an effective unsupervised learning tool for discovering patterns of co-regulated/co-expressed genes across a subset of samples in gene expression data analysis ~\cite{tanay2002discovering,madeira2004biclustering,pontes2015biclustering}.
+Biclustering methods are also applicable to domains beyond the context of gene expression data analysis, such as in analysis of voting data~\cite{hartigan1972direct}, collaborative filtering recommendation systems \cite{elnabarawy2016biclustering}, and analysis of web-usage data\cite{prabha2013biclustering}.
+
+In the past two decades, there has been an influx of proposed biclustering algorithms, as reviewed in~\cite{prelic2006systematic, eren2012comparative, oghabian2014biclustering, pontes2015biclustering, roy2016analysis}.
+A recent review by Pontes et al.~\cite{pontes2015biclustering} surveyed 30 different biclustering algorithms, categorized by the class of algorithm to which they belong.
+Since biclustering is an NP hard problem, the only perfect biclustering algorithm is exhaustive search, which is computationally intractable on large datasets.
+Even the best performing biclustering algorithms suffer weaknesses, typically a trade-off among execution time, recovery, and relevance.
+Multi-objective evolutionary algorithms (MOEAs) naturally lend themselves to these types of problems, where the goal is to find global optima in very large search spaces with potentially conflicting objectives. %In this work, we introduce a novel MOEA based framework to address the biclustering problem.
+We propose an evolutionary based biclustering framework using the non-dominated Sorting Genetic Algorithm (NSGA-II)~\cite{deb2002fast}, combined with a novel local search hill climber tailored for the biclustering problem. The NSGA-II, being an MOEA, can support any number of fitness functions and return a set of Pareto-optimal biclusters.
+\footnote{Python implementation for our methods is available on our GitHub repository: \url{https://github.com/clslabMSU}.}
+This algorithm differs from others~\cite{pontes2013configurable, mitra2006multi} both in fitness measure and in postprocessing methods.
+
+In unsupervised learning applications such as gene expression data analysis, where ground truth is not readily available, it is valuable to have useful tools for synthetic data generation and simulation.
+In addition to the MOEA biclustering framework, we address the issue of generation of appropriate benchmark datasets and improvement of existing external validation metrics.
+The proposed benchmark dataset generation tool is useful for generating biclusters of varying distributions for a wide range of gold standard benchmark datasets.
+For biclustering algorithms in general, one of the key challenges is how to quantify the goodness of the biclusters returned by an algorithm, especially in situations where the algorithm returns many biclusters. In our previous work~\cite{icpram18}, we had introduced a framework for enhancing relevance of biclustering algorithms by ranking the resulting biclusters using internal quality measures.
+In this paper, we build upon these preliminary results.
+
+The significant contributions of this work are as follows:
+\begin{enumerate}
+    \item Propose a framework for an effective evolutionary based biclustering algorithm using NSGA-II and bicluster fitness functions;
+    \item Present a methodology for generating a gold standard benchmark biclustering datasets. These simulate trend-preserving datasets that can be replicated and transformed to different structures to evaluate performance of biclustering algorithms;
+    \item Improve the robustness of the current state of the art recovery and relevance metrics, such as utilized in \cite{wang2016unibic}; 
+    \item Demonstrate a general framework to improve the performance of existing biclustering algorithms by evaluating and ranking the goodness of biclusters returned.
+  %  \item Demonstrate the ability of our previously proposed bicluster enhancement method to improve the performance of existing biclustering algorithms by evaluating/ranking the goodness of the biclusters returned.
+ %   \item Narrow down the scenarios in which certain algorithms excel and examine where they fall short.
+\end{enumerate}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related} presents an review of related current state of the art methods. The NSGA-II biclustering algorithm is described in Section~\ref{sec:framework} while Section~\ref{sec:syndata-review} describes the benchmark data generator and enhanced validation metrics. The empirical results obtained are presented and discussed in Section~\ref{sec:eval} and ~\ref{sec:disc}. A summary of the paper as well as future work is discussed in Section~\ref{sec:conc}.
+%Section~\ref{sec:bkgnd} discusses the context for our work: genetic algorithm that we employ in the evolutionary based method presented in this paper, a review of bicluster models and internal validation measures. 
+
+
+
+%Clustering is performed simultaneously on both the row and column dimensions of the dataset to discover biclusters.
+%A bicluster is a submatrix, defined by a subset of rows and a subset of columns, whose rows exhibit a desirable pattern across its columns. 
+%Biclustering is a special case of pattern-based clustering algorithms \cite{kriegel2009clustering}.
+
+%These homogeneous subgroups, or biclusters, do not necessarily span all the columns.
+
+%It has been commonly used for analysis of gene expression data. 
+%A bicluster is a submatrix with a subset of rows behaving similarly across a subset of columns.
+
+%The goal of a biclustering algorithm is to identify a set of biclusters with pairs of row and column subsets. 
+%Such a problem formulation is particularly important for gene expression data analysis because according to the general understanding of cellular processes, only a subset of genes is involved with a specific cellular process, which becomes active only under some experimental conditions. In this case, the inclusion of all genes in sample clustering or all samples in gene clustering not only increases the computational burden, but could impair the clustering performance due to the effect of these unrelated genes or samples, which are treated as noise. 
+
+%There are two underlying assumptions in biclustering: (i) the presence of irrelevant features, or of correlations among subsets of features, may significantly bias the representation of clusters in the full-dimensional space. By relaxing the constraint of global feature space, we could discover more meaningful subgroups; and (ii) different subsets of features may be relevant for different clusters which implies that objects cluster in subspaces of the data, rather than across an  entire dimension.
+
+%Usually, the expression levels of many genes are measured across a relatively small set of conditions or samples, and the obtained gene expression data are organized as a data matrix with rows corresponding to genes and columns corresponding to samples or conditions.
+%However, such a practice is inherently limited due to the existence of many uncorrelated genes with respect to sample or condition clustering, or many unrelated samples or conditions with respect to gene clustering.
+
+%Given a gene expression matrix $M$, the entries of a single bicluster $B$ referenced by the set of genes $I$ and set of samples $J$ is given by
+%\begin{equation}
+%	B_{ij} = \left\{ M_{ij}\ \mathrm{such\ that}\ i\in I\ \mathrm{and}\ j\in J \right\}
+%\end{equation}
+ %such that the entries indexed by the Cartesian product of these sets exhibit a distinct correlated pattern.
+%Biclustering algorithms perform local clustering on subset of genes and conditions with the objective of identifying an optimal set of biclusters $\{B\}$.
+
+
+
+
+%\begin{enumerate}
+ %   \item Synthetic data generation: benchmark data that can be easily manipulated to generate desired data distributions/properties more reflective of real data applications?
+  %  \item In connection with that, an improvement of external validation metrics when ground truth data is available?
+  %  \item a framework to application of evolutionary based biclustering algorithm
+%\end{enumerate}
+
+
+
+%%% The below seems to repeat what was said in the list above. Point (5) above was added to address the last sentence
+%Our overall aim is twofold: (i) To present a framework that enhances the performance of existing algorithms, in particular evolutionary-based methods; and (ii) To present an intuitive set of benchmark datasets and validation metrics that would improve comparison of performance of diverse methods to obtain an understanding of which algorithms are probably best suited for the domain application based on the known data distribution properties.
+
+%%% I think all of these are addressed now:
+%**\textbf{need to emphasize significance and usefulness of biclustering for bioinformatics and beyond.
+%why is this still a relevant topic to study, multiple algorithms have been proposed.
+%no perfect algorithm - due to NP hardness. however, strengths \& weaknesses;
+%cite review papers; what are the important issues... 
+%Motivate the need for this paper: investigate application of genetic algorithm
+%our key contributions:
+%1) framework for generating test synthetic data - what is the main issue with current one that we address?
+%2) using multiple fitness functions with genetic method based on internal validation measures; also known as quality measures- why are we proposing a genetic based algorithm
+%3) framework for  - presented preliminary results in ICPRAM paper. This work extends or focuses in on the usefulness.. refines the quality measures; understand why VET is lower performing...
+%notion of trend
+%for biclustering... weakness with current genetic methods}
+
+
+
+\section{Related Work}
+\label{sec:related}
+
+
+%Discuss different biclustering algorithms proposed... strengths and weaknesses. How does this work differ?
+
+%As mentioned in Section~\ref{sec:introduction}, there are at least 30 biclustering methods present in the literature, with more being devised all the time. 
+There have been several biclustering algorithms proposed over the past two decades as reviewed in  \cite{prelic2006systematic,eren2012comparative,oghabian2014biclustering,pontes2015biclustering,roy2016analysis}.%
+In this section, we present an overview of the biclustering methods that we empirically evaluated and use as a comparison for the MOEA biclustering method. Given the focus of utilizing an evolutionary algorithm in this work, we focus on an indepth review of evolutionary-based biclustering methods (EBM).
+We also describe benchmark datasets that have been proposed for biclustering algorithm evaluation in Section \ref{sec:syndata-review}.
+
+\subsection{Review of Biclustering Methods for Comparison}
+\label{sec:review-methods}
+
+The 7 non-evolutionary-based biclustering methods empirically evaluated in this work include Cheng \& Church (CC) \cite{cheng2000biclustering}, Iterative Signature Algorithm (ISA) \cite{bergmann2003iterative}, Order-Preserving Submatrices Algorithm (OPSM) \cite{ben2003discovering}, Factor Analysis for Bicluster Acquisition (FABIA)~\cite{hochreiter2010fabia}, Penalized Plaid Model (PPM)~\cite{chekouo2015thepenalized}, UniBic~\cite{wang2016unibic}, and Biclustering based on PAttern Mining Software (BicPAMS)~\cite{henriques2017bicpams}.
+These algorithms span over two decades and are summarized in Table~\ref{tab:algsummary}. We focused on these methods, as they were readily available for implementation. 
+Given that UniBic is an extension/improvement of the graph-based biclustering method QUBIC~\cite{li2009qubic}, we did not include QUBIC in our analysis, though it's implementation was publicly available. Likewise, given that BicPAMS~\cite{henriques2017bicpams} is the most recent pattern mining algorithms and an improved version of prior pattern mining biclustering algorithms since the initial introduction of BicPAM \cite{henriques2014bicpam}, we only included that. 
+It builds on subsequent methods including BicSPAM \cite{henriques2014bicspam}, BiP \cite{henriques2015biclustering}, and BicNET \cite{henriques2016bicnet}.
+
+ \input{tables/algorithms-used.tex}
+\subsubsection{Evolutionary-based Biclustering Methods }
+
+Evolutionary learning is commonly regarded as an efficient metaheuristic technique and has been successfully used for various optimization problems because of its excellent exploratory capability in a global search space ~\cite{huang2012parallelized}.
+Given that the biclustering problem can be viewed as a combinatorial optimization problem, multiple evolutionary-based biclustering methods (EBMs) have been proposed in literature.
+The overarching design scheme for the EBM is to insert the biclustering techniques into the evolutionary learning framework.
+Starting with a initial population, the EBM selects some individuals and recombines them using crossover and/or mutation to generate a new population.
+The process is repeated for a number of generations until termination conditions are met, such as maximum number of generations, satisfactory fitness values, or some number of generations without making sufficient improvements.
+EBMs define one or more fitness functions, which measure how well a candidate solution solves the specified problem.
+
+Gallo et al. proposed Biclustering via a Hybrid Evolutionary Algorithm (BiHEA) \cite{gallo2009bihea}. This is an extension of the first reported EBM - Bleuler-B~\cite{bleuler2004ea}.
+It applies a hybrid approach that integrates evolutionary algorithms with local search based on the CC biclustering algorithm \cite{cheng2000biclustering} to solve the biclustering problem.
+The goal of BiHEA is to generate near optimal biclusters with coherent values following an additive model.
+BiHEA's fitness functions incorporate size, mean square residue (MSR) score, and variance of the biclusters.
+It utilizes a two-point crossover operator rather than the single-point crossover of Bleuler-B, also including an elitism and recovery procedure.
+%In their method, each individual represents one bicluster, which is encoded by a fixed size binary string, the string is structured by combing a gene string with a condition string, if the gene or condition is included in a bicluster, the corresponding bit is set to 1, otherwise 0. They used the local search to return the set of individuals in the last population as the output.
+%The novelty of this algorithm is that they added elitism procedure and recovery procedure. 
+The elitism phase involves the selection of a set of best biclusters that do not overlap in a certain threshold and passing them to the next generation.
+Thus, they can control the diversity in the genotypic space.
+The recovery phase ensures that the best generated biclusters are kept in the population throughout the process of evolution.
+%During the recovery phases, in order to avoid the good solutions were misplaced through the generation, so they use this step to keep the best generated bicluster through the entire evolutionary process.
+%In addition, they used two-point crossover operator instead  of one point, because the latter would prohibit certain combinations of bits to be crossed over together.
+ 
+% ***from CBEB paper
+%Bleuler et al. [29] incorporated the same heuristic as Cheng and Church’s local search into a single-objective evolutionary framework to improve the biclustering outcome. Each individual represented a bicluster and a greedy iterative local search is performed to refine the bicluster. The fitness of individuals is quantitatively measured by mean square residual (MSR) score. Due to the conflicting requirements between the bicluster size and the homogeneity measure, Mitra and Banka [30] further proposed a multiobjective evolutionary biclustering algorithm involving multiple criteria in conjunction with local search heuristics. In addition, Divina and Aguilar-Ruiz [31] proposed an EA-based biclustering approach to finding biclusters with maximum size using the MSR measure. The authors paid special attention to looking for biclusters with large variation
+%***
+
+The Condition-Based Evolutionary Biclustering (CBEB) algorithm~\cite{huang2012parallelized} is another hybrid approach which integrates hierarchical clustering with evolutionary algorithm.
+The hierarchical clustering is applied to divide the condition dimension (i.e. the columns) search space into subspaces.
+By parallelizing the search process, they are able to improve the efficiency and effectiveness of the evolutionary algorithm.
+CBEB utilizes an ''expand and merge`` method to combine the biclusters from each subset of conditions into larger biclusters.
+Similar to BiHEA, their fitness function is also based on the MSR score.
+
+The Evolutionary Biclustering based in Expression Patterns (Evo-Bexpa) method ~\cite{pontes2013configurable} combines four criterion (transposed virtual error (VE$^T$), bicluster volume, overlap, gene variance) into a single aggregate objective function by summation.
+VE$^T$ is an internal validation metric (see Section~\ref{sec:vet}) for evaluating the quality of a bicluster.
+%According to ~\cite{pontes2013configurable}, VE$^t$ is useful in detecting shifting and scaling patterns, however in this work, we demonstrate it otherwise.
+A key strength of their method is that the fitness function includes weights for all the criterion.
+The weight values can be configured for the domain application.
+The drawback is that it incorporates user preferences based on some characteristics of the results. Thus, a level of prior knowledge regarding the outcome is required, which is not the case with unsupervised learning methods.
+Similar to semi-supervised learning, it performs very well when prior information is included on the location of biclusters.
+%In addition, their fitness function is combined by the four terms and each terms are weighted (except for the VE value). The VE value for the bicluster is divided by the VE value of the whole microarray, and the weights of the other terms of the fitness function is recomputed when using a different microarray. In their fitness function, all the weights have been designed in the same way, a lower value of a certain weight will result on biclusters with lower values of its characteristic. In this way, other objectives can also be easily incorporated into the search, as well as any objective may be ignored by setting its weight to zero. 
+
+Curry et al. introduced the customizable framework GABI~\cite{curry2014framework} for subspace pattern mining suited to high-dimensional datasets.
+The key innovation of the GABI approach is to utilize rule-based feature selection into the bicluster scoring process.
+They calculate a bicluster score from any list of selected columns, and use a feature selection function to return the list of bicluster rows from any list of selected columns.
+GABI is designed as a modular implementation, enabling customization of the fitness function.
+A drawback is that the feature selection method has to be tailored to each dataset encountered, thus requiring prior knowledge about outcome, similar to Evo-Bexpa.
+%However, it is a method that is highly insular for the domain application.
+%The method poorly generalizes for other gene expression datasets, in which case it is hard to define what features should be integrated into the framework. 
+%They argued that through custom specification of this component of the algorithm, any bicluster models can be implemented and evaluated within the GABI framework. This means that the GABI framework can be used to perform subspace pattern mining for a whole range of tasks. 
+
+BiCAMWI~\cite{lakizadeh2016bicamwi} is another EBM designed for analysis of large scale protein-protein interaction (PPI) networks from time series gene expression data.
+They incorporate a novel fitness function, Discretized Column-based Measure (DCM), which is based on discretization of conditions to evaluate the quality of biclusters.
+They used four different discretization techniques: simple threshold, mean and standard deviation, transitional state discrimination, and variation between time-points.
+Each of these replace the continuous expression value of the data matrix by a symbol, D/N/U, where D implies down-regulation, N no-regulation and U up-regulation.
+The fitness function (DCM score) is formulated using a penalty factor, the number of genes in bicluster, and the frequency of each discrete symbol D, N or U.
+The higher score give better quality of biclusters.
+Their method is more efficient to retrieve the significant dynamic subnetworks and improve the accuracy of protein detection.
+
+A very recent EBM proposed in literature is the Evolutionary-based biclustering algorithm (EBIC)~\cite{orzechowski2018ebic}.
+It is a hybrid approach that employs a different representation for the biclusters: a series of column indices instead of combinations of a set of rows and a set of columns.
+The generated population are stored in a compressed bicluster format (CBF).
+The CBF format is able to determine the starting positions of each of the biclusters and holds indexes of columns of biclusters.
+Similar to CBEB, they divide the data matrix into chunks for more efficient parallelized search.
+In contrast, EBIC conducts the parallel search using multiple GPUs.
+To obtain diversity of biclusters obtained, they limit the probability of selecting individuals that share columns with those already added to the new generation.
+EBIC's fitness function includes a penalty factor to promote population diversity, which increases the likelihood of individuals with underrepresented columns to be place in the population.
+
+%%% I don't feel like this paragraph is relevant enough to our paper, since it is very long as is
+%%% --Jeff
+%In EBIC, they dispatched chunks of the input data to multiple GPUs and calculated the quality of biclusters in parallel, which make EBIC very efficient computationally.
+%In order to speed up efficiency, Duarte et.al~\cite{duarte2018fpga} applied Field-Programmable Gate Array (FPGA)-based architectures to accelerate QUalitative BIClustering (QUBIC) algorithms.
+%Their work introduced a parallel architecture for QUBIC based on an heterogeneous system composed by a FPGA and a CPU that communicate through the OpenCL framework.
+%Results showed a reduction up to 29x in the execution time of the functions accelerated on the FPGA when compared to a software-only implementation.
+%However, in this work, our focus is on the effectiveness of methodology not efficiency.
+%These GPU/accelerator frameworks could be applied to the methods proposed in this work for enhanced and more efficient results.
+
+
+%\textbf{Junya: include statement about how there are other GPU enhanced/accelerator methods for biclustering, to speed up efficiency - cite the other paper you review. In this work, our focus is on the effectiveness of methodology not efficiency. Beyond scope of this work. These GPU/accelerator frameworks could be applied to the methods proposed in this work for enhanced and more efficient results.}
+
+\subsection{Synthetic Benchmark Dataset Generation for Biclustering Algorithms}
+\label{sec:syndata-review}
+
+It is inherently challenging to ensure a fair comparison of biclustering approaches, since every method uses different model assumptions which may work well in certain scenarios and fail in others~\cite{prelic2006systematic}.
+According to Prelic et al., it's important to define a common setting that reflects the general basis of the majority of biclustering studies available~\cite{prelic2006systematic}.
+Hence, the use of properly defined models of synthetic data generation for evaluation of the multiple algorithms is essential.
+
+Mukhopadhyay et el.\cite{mukhopadhyay2010biclustering} defined several models of biclusters: constant, constant row, constant column, additive pattern, multiplicative pattern, and additive-multiplicative patterns.
+%
+Since all of these models are special cases of the additive-multiplicative model, we will only discuss this model in detail. Biclusters with both additive and multiplicative patterns are of the form
+\begin{equation}
+	m_{ij} = \pi b_i q_j + a_i + p_j
+\end{equation}
+where $\pi$ is a constant, $b_i$ and $a_i$ are constant for each row, and $q_j$ and $p_j$ are constant for each column.
+
+%two types of bicluster concepts: biclusters with constant expression
+%values and biclusters following an additive model where the
+%expression values are varying over the conditions. The former
+%type can be used to test methods designed to identify—according
+%to the terminology in Madeira and Oliveira (2004)—biclusters with
+%constant and coherent values, while the latter type, where the
+%expression values show the same trend for all genes included, serves
+%as a basis to validate algorithms tailored to biclusters with coherent
+%values and coherent evolutions. Concerning the biclustering struc-
+%ture, we consider two scenarios: (1) multiple biclusters without any
+%overlap in any dimension and (2) multiple biclusters with overlap.
+
+Two other, often more biologically relevant, bicluster models are order-preserving and trend-preserving biclusters~\cite{wang2016unibic}.
+Order preserving biclusters are biclusters whose rows have equal ranks.
+If one were to replace each row of an order-preserving biclusters with the rank vectors of those rows, the result would be a column-constant bicluster (in the absence of noise).
+Trend-preserving biclusters extend order-preserving biclusters to allow ranks of each row to be reversed, capturing both strong positive and strong negative correlation between rows.
+These patterns can be understood visually by Figure~\ref{fig:biclustermodels}.
+
+\input{figures/bicluster-patterns}
+
+Another important distinction is between sequential and non-sequential biclusters. Sequential biclusters are a special case of the biclustering problem where all of the rows and columns in the bicluster are in order and adjacent to each other. For example, a sequential bicluster might contain rows 1, 2, 3, 4, and 5 with columns 3, 4, 5, and 6. This work primarily deals with sequential biclusters, however the generalization of an algorithm for finding sequential vs. non-sequential biclusters is trivial provided the algorithm doesn't utilize the fact that biclusters are sequential.
+
+%***Data preprocessing techniques that translate data into format that these models could be applied on.
+It is important to note that some biclustering algorithms require data preprocessing before they can operate.
+Several common preprocessing methods of gene expression data are surveyed by Irizarry et al.~\cite{irizarry2003exploration}.
+Among the methods of normalization are log transformations, z-scores, and min-max scaling.
+
+Prelic et al.~\cite{prelic2006systematic} introduced an artificial model, similar to the model in~\cite{ihmels2002revealing}, that generates data to investigate the capability of the methods to recover known groupings, focusing on constant and additive (coherent) bicluster models.
+They also considered two scenarios of biclustering structure: (1) multiple biclusters without any overlap in any dimension and (2) multiple biclusters with overlap.
+They also examine the effect of noise by adding Gaussian noise to each cell of the original gene expression matrix.
+The major drawback is that the datasets are small (50-100 genes) and have equally sized biclusters.
+
+Hochreiter et al.~\cite{hochreiter2010fabia} introduced a set of simulated datasets to attempt to match the characteristics of gene expression data better. The overall model for the generated  biclusters and additive noise is :
+\begin{equation}
+	X =  \sum_{i=1}^{\rho }\lambda_{i} z_{i}^{T} +\Upsilon  =\Lambda Z +\Upsilon 
+\end{equation}
+where the outer product $\lambda z_{}^{T}$ of two sparse vectors results in a matrix with a bicluster, and $\Upsilon \in R^{n*l}$ is additive noise. Their datasets include 100 independent datasets that were generated by a multiplicative model. Each dataset includes four files (X, Y, L, Z). The X file consists of a 1000 (genes) *100 (samples) matrix with biclusters that generated by the outer product of two sparse vectors. The Y file consists of a matrix with biclusters that have additive noise. The L file contains the prototype vectors as columns, and the Z file contains the transposed factors as rows. Their FABIA datasets match the characteristics of gene expression data well, especially in terms of the heavy tails. However, the generated data is mainly according to a multiplicative model structure, they did not consider any other bicluster structure model. %There is another dataset available on their website that utilizes the additive model structure.
+Another set of benchmark data generation focuses on inserting perfect biclusters with shift or scaling tendencies~\cite{mukhopadhyay2010biclustering}, or a combined pattern of both~\cite{pontes2013configurable} into artificial data matrices with uniform random generation.
+
+
+Wang et al.~\cite{wang2016unibic} introduced another benchmark dataset generated with the BiBench framework~\cite{eren2012comparative}.
+Their dataset consists of 6 groups of square bicluster structures (trend-preserving, column-constant, row-constant, shift-scale, shift, scale) as well as 3 overlapping datasets and 3 narrow datasets for a total of 119 datasets.
+Square biclusters have the same number of genes and conditions in each bicluster while narrow biclusters contain many more genes than conditions.
+Overlapping biclusters are biclusters that share one or more genes or conditions. 
+According to Wang et al.~\cite{wang2016unibic}, biologically, genes which are co-regulated under a subset of experimental conditions exhibit expression patterns which are trend-preserving, but may be quite different in value under those conditions.
+Here a gene expression pattern refers to the vector of expression values of the gene under the specific conditions.
+Two gene expression patterns are said to be trend-preserving if and only if their corresponding vectors are either order-preserving or order-reversing.
+However, there is always the concern of whether the synthetic data generation captures the complexity of real applications. 
+%cite our icpram work too
+
+
+\section{Multi-objective Biclustering Framework}
+\label{sec:framework}
+
+\subsection{NSGA-II Genetic Algorithm}
+The biclustering problem can be viewed as a combinatorial optimization problem, which evolutionary algorithms excel at solving~\cite{muhlenbein1988evolution}.
+Our general workflow is shown in Figure~\ref{fig:workflow}. \input{figures/workflow.tex}
+We use the widely known NSGA-II multi-objective evolutionary algorithm \cite{deb2002fast} for the framework proposed in this work, due both to ease of implementation and flexibility.
+Beginning with an initial gene expression matrix, our goal is to find the subset of rows and subset of columns that together optimize our fitness functions.
+
+%input data matrix -- multi-objective vs. single objective; -- pick specific EA (used NSGA-II); decide on fitness functions; issue of parallelism vs. spread - so not converging at same bicluster; role hillclimbing to expand on the biclusters found.
+%also for enhancement framework**
+
+%It is easy to implement and can be easily modified to incorporate multiple or different fitness functions unlike other multi-objective evolutionary algorithms such as SPEA2~\cite{zitzler2001spea2} or PAES~\cite{knowles1999pareto}.
+%was a combination of reputation, ease of implementation, and higher likelihood that potential readers would already be familiar with the approach.
+%The reason we chose a multi-objective evolutionary algorithm for our work is primarily for flexibility. We hope that this method will be helpful for the research community, and want to encourage others to use and modify it as needed.
+%Using a multi-objective framework allows users to easily change which and how many fitness functions are used in the algorithm.
+
+While both EvoBexpa~\cite{pontes2013configurable} and our proposed NSGA-II based algorithm both fall under the category of evolutionary algorithms, they are fundamentally different. EvoBexpa is a single-objective algorithm, despite having three components to its fitness function. These components are summed together to produce a single fitness value. When instead applying a multi-objective approach as in NSGA-II, we gain the ability to return a set of Pareto optimal biclusters. Our approach also features a local search finisher after the evolutionary algorithm has completed, ensuring that the returned bicluster(s) are as close as possible to the optima the evolutionary algorithm had found.
+
+Although we only use a single objective function in our experiments, having the ability to quickly and easily add more had proven helpful in initial testing, and we believe the ability to expand the number of fitness functions is valuable to the community.
+
+In addition, multiple replicate experiments of this method often converge to the same solutions.
+This both reassuring in the quality of the discovered optima, as well as problematic in that most gene expression matrices have multiple biclusters to find.
+Without communication between iterates, it is not possible to force the algorithm not to converge to the same solution multiple times.
+We opted for a massively parallelizeable implementation where the same solution can be found multiple times.
+Repeated solutions build confidence that the discovered solution is a global optima rather than a local optima, however especially noisy biclusters are less likely to be found than noise-free biclusters which produce better fitness values.
+
+In this section, we provide a background of the implementation details necessary for the results presented later to be replicated.
+
+
+\subsubsection{Chromosome Representation}
+A popular representation for optimal subset problems is by using a binary string with length equal to the size of the superset.
+An entry of one at position $i$ in this string indicates that the member of the superset at position $i$ is included in the subset.
+An entry of zero at a position indicates the opposite.
+For example, the subset $\{2, 4, 5\}$ of $\{1, 2, 3, 4, 5\}$ would be encoded as the binary string $01011$.
+This representation can be applied to biclustering by using a binary string of length $m+n$ where $m$ is the total number of genes and $n$ is the total number of samples~\cite{mitra2006multi}.
+Most genetic operators are standard with this representation, with the exception of crossover.
+
+\subsubsection{Parent Selection}
+The selection operator used in this work is binary tournament selection as specified by Deb et al.~\cite{deb2002fast}, making use of NSGA-II's crowding distance operator.
+In essence, two individuals are randomly selected from the population, and the one with higher fitness is chosen to undergo genetic variation and survive to the next generation.
+This process is repeated until the number of selected individuals is equal to the population size.
+
+\subsubsection{Parent Crossover}
+The crossover operator for our specified representation is single-point crossover, however it is imperative that crossover is performed separately on the gene and sample components of the representation.
+If crossover were to be performed directly on the entire individual, the sample phenotype would often be changed drastically as the information containing the samples in the bicluster is at the end of the genotype.
+In this situation, the gene phenotype would largely stay the same as it occurs at the beginning of the genotype.
+
+\subsubsection{Offspring Mutation}
+The mutation operator is a simple bit flip mutation, in which each given bit is swapped between 0 and 1 with a specified probability $p$.
+The expected number of changes to the genotype during each mutation event is $(i+j)p$ for an $i \times j$ bicluster.
+Unlike crossover, since each mutation is independent for each bit, it does not matter if mutation is done on the entire genotype or on the gene and sample components separately.
+In our implementation, mutation was performed on the entire genotype.
+
+\subsubsection{Solution Archiver}
+Archiving is slightly modified from the standard NSGA-II algorithm in order to produce large, non-overlapping biclusters. During our testing with the original NSGA-II archiver, many extremely similar biclusters were discovered and archived once fitness had reached its minimum value (on noise-free synthetic datasets).
+
+We modified to archiver so that when a new member is added to the archives with a tie in fitness, it can be absorbed into an existing archive member if
+\begin{equation} \label{eq:overlap}
+	\frac{\left\lvert \left( A_I \cup A_J \right) \cap \left( B_I \cup B_J \right)\right\rvert}
+	{\max \left\{ \left\lvert A_I \cup A_J \right\rvert, \left\lvert B_I \cup B_J \right\rvert \right\}} > \delta
+\end{equation}
+for some prescribed overlap ratio $\delta$, where $A$ is an existing archive member and $B$ is a newly archived bicluster. $A_I$ and $A_J$ represent the set of genes and samples in the bicluster $A$, respectively, and the same holds for $B$. Intuitively, equation~(\ref{eq:overlap}) is the number of shared genes and conditions between the two biclusters $A$ and $B$ divided by the number of total genes and samples in the larger bicluster.
+
+When applied to the binary string representations of the biclusters, equation~(\ref{eq:overlap}) can be computed quickly by bitwise operators:
+\begin{equation}
+	\frac{W(A \land B)}{\max \{ W(A), W(B)\}} > \delta
+\end{equation}
+where $W$ is the Hamming weight function.
+
+In the case that there is more than one existing archive member, we compute the best pairwise overlap among archive members. As long as at least one pair of archive members, including the newly introduced archive member, has overlap ratio larger than $\delta$, we continue merging biclusters in the archive. This helps the returned number of biclusters stay relevant.
+
+We have mentioned absorbing or merging biclusters, but have yet to give a formal definition of this process. If bicluster $A$ is absorbed by bicluster $B$, or $A$ is merged with $B$, then the resulting bicluster $C$ has genes given by the union of the genes of $A$ and $B$ and samples given by the union of the samples of $A$ and $B$. In the binary string representation, this process is equivalent to calculating
+\begin{equation}
+	C = A \lor B
+\end{equation}
+
+\subsubsection{Generation of Candidate Solutions}
+Another important component of an evolutionary algorithm is how to generate a candidate solution.
+Poorly generated candidate solutions can slow down the convergence of the evolutionary algorithm, or even cause it to be stuck in local optima.
+
+Candidate solutions in our implementation are generated according to two separate Bernoulli distributions: one for the gene components (with probability $p_g$) and one for the sample components (with probability $p_s$).
+This separation allows the user to guide the shape and size of the biclusters based on the problem at hand.
+Raising $p_g$ while leaving $p_s$ constant causes biclusters to have more genes relative to the samples, and vice versa.
+Raising or lowering $p_g$ and $p_s$ jointly will cause discovered biclusters to be larger or smaller, respectively, but the ratio of genes to samples would be relatively constant.
+
+\subsubsection{Single-objective vs. Multi-objective}
+We chose to use the multi-objective NSGA-II algorithm as a backbone for this biclustering approach as opposed to a single-objective genetic algorithm for several reasons. First, it allows the flexibility to add and remove objectives as desired. A popular combination of objectives in biclustering problems is bicluster size and bicluster quality \cite{mitra2006multi}, giving a Pareto front ranging from small, high quality biclusters to large, lower quality biclusters. In our experiments, we only found the need for one objective given the modifications we have made to the behavior of NSGA-II.
+
+Another motivating factor behind the choice of NSGA-II in our algorithm is NSGA-II's archiver. In the absence of noise, biclusters of optimal quality are all saved by the archiver, whereas most single-objective genetic algorithms do not readily support the return of multiple solutions. When noise is present, a fitness function can be used that considers all fitnesses below a certain threshold to be perfect.
+
+Finally, NSGA-II is a classic in evolutionary optimization. It is well-researched, well-understood, and reliable as a global search heuristic. Implementation for NSGA-II is widely available in a variety of programming languages, making the reproduction of this research easier.
+
+\subsection{Local Search Finisher}
+As is common in the field of evolutionary computing, we employ a local search (or hill climbing) Algorithm~1 to attempt to improve solutions found by the evolutionary algorithm. We set ratio $=$ 1.25. bias $=$0.01,maxrows $=$100, and maxcols $=$ 50 in our experiments.
+\input{algorithms/hillclimber.tex}
+
+We are interested in improving the overall performance of these algorithms using evaluation measures that have been proposed in literature.
+In the context of this work, an algorithm performs well if majority of the biclusters returned by the method are relevant and if it discovers (or retrieves) majority of the actual biclusters present in the data.
+We formally quantify performance based on relevance and recovery scores, as defined in section~\ref{sec:eval}.
+Our hypothesis is that ASR and VE$^T$ will result in the most significant improvement given that they have been demonstrated to successfully identify biclusters of shifting, scaling and combined patterns (known pattern concepts for gene expression data \cite{pontes2010measuring}).
+We compare their effect on the enhancement of these algorithms to MSR and SMSR which have been demonstrated in literature as been effective internal validation measures for only one class of bicluster patters, shifting and scaling respectively.
+
+\subsection{Fitness Functions}
+An essential component of genetic algorithms is how the fitness of a candidate solution is calculated. A well-chosen fitness function can easily make the difference in whether the algorithm is able to find high quality solutions to a problem. For this work, we compare three internal bicluster validation measures on their effectiveness as fitness functions in the previously described genetic algorithm.
+
+Internal validation measures provide a means of evaluating quality of biclusters obtained without the knowledge of ground truth; which is very useful for real datasets for which ground truth is unknown. 
+
+Regarding development of effective heuristic and suitable evaluation measures, the following have been proposed:~\cite{cheng2000biclustering,pontes2007virtual,mukhopadhyay2009novel,ayadi2009biclustering,pontes2010measuring}.
+These measures are based on inherent assumptions about possible bicluster patterns for gene expression data such as shifting, scaling or a combination of both.
+Several evaluation measures have been proposed for biclustering algorithms~\cite{pontes2015quality}.
+These evaluation measures, also referred to as quality measures, attempt to quantify the goodness of the biclusters.
+They can be regarded as internal validation measures as they are evaluating the biclusters based on certain desired properties of possible patterns (shifting, scaling, and shift-scale).
+Pontes et al. in~\cite{pontes2015quality} conducted a comparison analysis of 14 measures known in literature to assess their ability to identify optimal biclusters based on shifting, scaling or combined patterns.
+Their work identified two of these measures, average Spearman's rho (ASR) and transposed virtual error (VE$^T$) as been proficient in identifying all three types of biclusters.
+
+\subsubsection{Average Spearman's Rho.}
+\label{sec:asr}
+
+The Average Spearman's Rho (ASR) \cite{ayadi2009biclustering} measure is an adaptation of the Spearman's Rho \cite{lehmann1975nonparametrics} correlation coefficient to assess bicluster quality. Spearman's Rho is defined as
+\begin{equation}\label{spearman_rho}
+	\rho(x, y) = 1 - \frac{6}{m(m^2-1)} \sum_{k=1}^{m} \left(r\left(x_k\right) - r\left(y_k\right)\right)^2
+\end{equation}
+for two vectors $x$ and $y$ of equal length $m$, where $r(x_k)$ and $r(y_k)$ are the ranks of $x_k$ and $y_k$, respectively. Let
+\begin{equation}
+	\rho_{\normalfont{gene}} = \frac{\sum_{i \in I} \sum_{j \in I, j > i} \rho(i, j)}{\lvert I \rvert \cdot \left(\lvert I \rvert - 1\right)}
+\end{equation}
+\begin{equation}
+	\rho_{\normalfont{condition}} = \frac{\sum_{i \in J} \sum_{j \in J, j > i} \rho(i, j)}{\lvert J \rvert \cdot \left(\lvert J \rvert - 1\right)}
+\end{equation}
+
+\noindent ASR is defined as
+\begin{equation} \label{asr}
+	ASR(\mathcal{B}) = 2 \cdot \max\left\{\rho_{\normalfont{gene}}, \rho_{\normalfont{condition}}\right\}
+\end{equation}
+
+\noindent The ASR's value is in the range $\left[-1, 1\right]$, where both $-1$ and $1$ represent a perfect trend-preserving bicluster. ASR is one of the few bicluster quality measures that can detect both shifting and scaling patterns of biclusters, as well as shift-scale (combined pattern) biclusters~\cite{pontes2015quality}.
+\\
+
+\subsubsection{ Submatrix Correlation Score.}
+\label{sec:scs}
+
+Like ASR, the Submatrix Correlation Score (SCS)~\cite{yang2011finding} is an internal bicluster quality measure.
+It is based on the Pearson correlation measure, so it only finds linearly correlated biclusters.
+SCS is defined as the row or column of the bicluster exhibiting largest (in magnitude) average correlation with other rows or columns, respectively.
+Formally, define
+\begin{equation}
+	S_{row} = \min_{i_1 \in I} \left\{ 1 - \frac{\sum_{i_2 \in I, i_2 \ne i_1} |\rho(r_{i_1}, r_{i_2})|}{I-1} \right\}
+\end{equation}
+\begin{equation}
+	S_{col} = \min_{j_1 \in J} \left\{ 1 - \frac{\sum_{j_2 \in J, j_2 \ne j_1} |\rho(c_{j_1}, c_{j_2})|}{J-1} \right\}
+\end{equation}
+where $\rho$ denotes Pearson correlation, $r_i$ denotes row vector $i$ of the bicluster having $I$ rows, and $c_j$ denotes column vector $j$ of the bicluster having $J$ columns.
+SCS is then given by the minimum of these two values:
+\begin{equation}
+	SCS = \min\left\{S_{row}, S_{col}\right\}
+\end{equation}
+SCS can detect shift, scale, and shift-scale biclusters, but like many measures discussed here, has difficulty with trend-preserving biclusters.
+\\
+
+\subsubsection{ Transposed Virtual Error.}
+\label{sec:vet}
+
+Transposed Virtual Error (VE$^T$) \cite{pontes2010measuring} is another bicluster quality measure that correctly identifies shift, scale, and shift-scale biclusters. Transposed Virtual Error is an improvement on Virtual Error (VE) \cite{pontes2007virtual}, which does not identify shift-scale biclusters.
+
+Both VE and VE$^T$ required standardized biclusters. A bicluster is standardized by subtracting the row mean from each element of the bicluster and dividing by the row standard deviation, i.e.
+\begin{equation}\label{standardize_bicluster}
+	\hat{\mathcal{B}} = \frac{\mathcal{B}_{ij} - \mu_{iJ}}{\sigma_{iJ}}, \quad i = 1, 2, ..., \lvert I \rvert, \quad j = 1, 2, ..., \lvert J \rvert
+\end{equation}
+where $\mu_{iJ}$ is the mean of row $i$ in $\mathcal{B}$ and $\sigma_{iJ}$ is the standard deviation of row $i$ in $\mathcal{B}$.
+
+VE computes a virtual gene $\rho$, which is a vector imitating a gene whose entries are column means across all genes in the bicluster.  Explicitly, the standardized virtual gene is calculated for a standardized bicluster $\hat{\mathcal{B}}$ as
+\begin{equation} \label{virtual_gene}
+	\hat{\rho_{j}} = \frac{1}{\lvert I \rvert} \sum_{i=1}^{\lvert I \rvert} \hat{\mathcal{B}}_{ij}, \quad j = 1, 2, ..., \lvert J \rvert
+\end{equation}
+Finally, VE is defined as
+\begin{equation}\label{ve}
+	VE(\mathcal{B}) = \frac{1}{ \lvert I \rvert \cdot \lvert J \rvert } \sum_{i=1}^{\lvert I \rvert} \sum_{j=1}^{\lvert J \rvert} \lvert \hat{\mathcal{B}}_{ij} - \hat{\rho_j} \rvert
+\end{equation}
+To compute VE$^T$, transpose the bicluster prior to calculating VE. VE$^T$ computes a virtual condition $\rho$ and measures the deviation of conditions in the bicluster from $\rho$. The virtual condition $\rho$ is calculated as
+\begin{equation}\label{virtual_condition}
+	\hat{\rho_{i}} = \frac{1}{\lvert J \rvert} \sum_{j=1}^{\lvert J \rvert} \hat{\mathcal{B}}_{ij}, \quad j = 1, 2, ..., \lvert J \rvert
+\end{equation}
+and VE$^T$ is calculated as
+\begin{equation}
+	VE\textsuperscript{T}(\mathcal{B}) = \frac{1}{ \lvert I \rvert \cdot \lvert J \rvert } \sum_{i=1}^{\lvert I \rvert} \sum_{j=1}^{\lvert J \rvert} \lvert \hat{\mathcal{B}}_{ij} - \hat{\rho_i} \rvert
+\end{equation}
+
+
+VE$^T$ is equal to zero for perfect shifting or scaling or shift-scale patterns.\\
+
+\noindent\ {\bf Special Cases for VE$^T$}.
+%In running the bicluster quality measures discussed in this section on synthetic datasets, we noticed a few special cases of biclusters that presented a problem in our calculations. These cases are extremely unlikely to occur when considering real gene expression data, but should be addressed nonetheless.
+%To compute Spearman's Rho in equation (\ref{spearman_rho}), we must determine the rank of each element in both vectors $x$ and $y$. When there are ties the elements of $x$ or $y$, ranking becomes problematic, and hence Spearman's Rho is not well defined. While there are methods of tie correction in Spearman's Rho calculation \cite{zar1998spearman}, if ties are likely one should consider using the Kendall's Tau rank correlation method \cite{kendall1948rank} instead. In real world applications, ties in gene expression data with the presence of noise is extremely unlikely, so Spearman's Rho is still a viable choice of correlation method.
+Constant rows in expression data pose an issue when computing VE$^T$. When one or more rows are constant, the standard deviation of at least one row is zero, and thus the result of equation~(\ref{standardize_bicluster}) is undefined. 
+%One solution is to look at the MSR score of the offending bicluster to determine whether the whole bicluster is constant or near-constant. A sufficiently low MSR score would indicate a constant bicluster. Similarly, one could calculate the SMSR score of the bicluster to see if we have a scale bicluster with a scale factor of approximately one. however the MSR score would be indicative of a constant bicluster if this were applied to real gene expression data
+A constant row is highly unlikely in real data applications, so a standard deviation of zero should be a non-issue. For the context of this work with synthetic data, VE$^T$ is set to one if any zero-division errors occurred. This does produce false negatives in the case that a constant row is part of a constant bicluster. \\
+
+%\noindent {\bf Mean Squared Residue:}\\
+%The mean squared residue score (MSR) describes how well a bicluster follows a shifting pattern \cite{cheng2000biclustering}. MSR is defined as
+%\begin{equation}\label{msr}
+%	MSR(\mathcal{B}) = \frac{1}{\lvert I \rvert \cdot \lvert J \rvert} \sum_{i=1}^{\lvert I \rvert} \sum_{j=1}^{\lvert J \rvert} (b_{ij} - b_{iJ} - b_{Ij} + %b_{IJ})^2
+%\end{equation}
+%where the bicluster $\mathcal{B}$ consists of rows $I$ and columns $J$. Values $b_{iJ}$ and $b_{Ij}$ denote the mean of the $i^{\normalfont{th}}$ row and %$j^{\normalfont{th}}$ column, respectively, and $b_{IJ}$ denotes the mean of all entries of the bicluster.
+
+%By design, biclusters that follow a perfect shifting pattern have an MSR score of zero. Larger MSR scores represent more deviation from a perfect shifting pattern.
+
+\subsubsection{Trend-Preserving Correlation (TPC)}
+Trend-preserving correlation is a novel internal validation measure that we developed for use in the proposed evolutionary biclustering algorithm.
+TPC is devised to be one when all rows in a bicluster increase or decrease according to the same pattern, or according to the opposite of this pattern.
+
+First, the trend $t$ for each row $x$ of length $J$ is generated. This trend is represented as a vector of $\pm 1$, where a $1$ at position $i$ in the vector means that $x_{i+1}-x_i > 0$ and similarly a $-1$ at position $i$ means that $x_{i+1}-x_i \le 0$. This is given mathematically as
+\begin{equation}
+	t_j = \text{sgn}(x_{j+1}-x_j), \quad j = 1, 2, \dots, J-1
+\end{equation}
+where $\text{sgn}(x)$ is the sign function
+\[
+	\text{sgn}(x) = \left\{\begin{array}{lr}
+        1, & \text{if } x > 0\\
+        -1, & \text{if } x \le 0\\
+        \end{array}\right.
+\]
+We define the correlation $\rho$ between two trends based on the Hamming distance between them, i.e.
+\begin{equation} \label{eq:hamming}
+	\rho(s, t) = \max\left\{ \frac{1}{J-1}\sum_{i=1}^{J-1} \mathbb{I}(s_i = t_i), \frac{1}{J-1}\sum_{i=1}^{J-1} \mathbb{I}(s_i \ne t_i) \right\}
+\end{equation}
+where $\mathbb{I}$ is the indicator function. The maximum in equation~\ref{eq:hamming} is to decide whether two trends are positively or negatively correlated.
+
+Given the row trends $t_i$ of a bicluster having $I$ rows and $J$ columns, the trend-preserving correlation of the bicluster is
+\begin{equation}
+	\text{TPC}(t_1, \dots, t_I) = \begin{pmatrix}\ I\ \\2\end{pmatrix}^{-1}\sum_{i \ne j} \rho(t_i, t_j)
+\end{equation}
+where $i$ and $j$ assume every integer value from $1$ to $J-1$. The TPC of a bicluster is intuitively the average degree in which each pair of rows follow the same trend. It is clear that TPC ranges from zero to one, assuming a value of one if all rows in the bicluster follow exactly the same trend.
+
+
+%MicroCluster: efficient deterministic biclustering of microarray data
+%Wei Wang
+%Data mining for bioinformatics - special issue.
+
+\section{Synthetic Data Generation}
+
+To effectively evaluate biclustering algorithms, benchmark synthetic data are utilized.
+The advantage of utilizing synthetic data in evaluation of algorithm performance is that there is readily available ground-truth.
+However, there is always the concern of whether the synthetic data generation captures the complexity of real applications.
+The benchmark datasets used in this work are those included with the UniBic algorithm~\cite{wang2016unibic} and FABIA algorithm\cite{hochreiter2010fabia} and generated with the BiBench framework~\cite{eren2012comparative}.
+They have also been utilized in recently proposed methods by Orzechowski et al.~\cite{orzechowski2018ebic} and Dale et al.~\cite{icpram18}.
+In this work, we also introduce a tool for synthetic data generation with greater flexibility and control in generating benchmark datasets for biclustering.
+
+The UniBic synthetic datasets consist of 15 instances of 6 types of square bicluster structures (trend-preserving, column-constant, row-constant, shift-scale, shift, scale) as well as 20 overlapping datasets and 9 narrow datasets: a total of 119 datasets. Square biclusters have the same number of genes and conditions in each bicluster while overlapping biclusters are biclusters that share one or more genes or conditions. Narrow biclusters contain many more genes than conditions.
+
+
+
+A key component of the evaluation of biclustering algorithms is the quality of the testing datasets.
+We use synthetic datasets for bioinformatics applications because real datasets do not have ground truth information available for measuring accuracy.
+We believe that the UniBic synthetic datasets we are using do not fully cover narrow trend-preserving biclusters, the most biologically significant type of bicluster, so we felt it would be beneficial to the research community to expand on this type of bicluster.
+One contribution of this work is to propose a simple yet robust method of generating synthetic datasets containing trend-preserving biclusters \ref{fig:biclustermodels}.
+
+% Algorithm~\ref{alg:syntheticdata} gives wrong number!
+Algorithm~2 provides a detailed explanation of how this data is generated. Two parameters of note are the \texttt{$PD_N$} and \texttt{$PD_G$} parameters. These are both probability distributions. The only requirement of these distributions are the ability to sample from them, with the additional requirement that a 95\% interval centered around the median of \texttt{$PD_N$} must be calculated. \texttt{$PD_G$} must have nonnegative support, as a negative valued sample from this distribution would result in a bicluster that is not trend preserving. Line~14 of Algorithm~2 is where this would occur. Alternatively, one could replace the multiplication by $x$ with a multiplication by $|x|$ or $x^2$ to similar effect. We set \texttt{$PD_N$} to  $N(0, 1)$ and \texttt{$PD_G$} to $\chi^2_3$. Note that \texttt{BicRows} can be extended to a vector of sizes for differently sized biclusters and \texttt{BicCols} can be extended to a vector.
+Implementation for Algorithm~2 as well as all of the other methods discussed in this paper are found at \url{https://github.com/clslabMSU/Biclustering-MOEA}.
+
+\input{algorithms/syntheticdata.tex}
+
+%\textcolor{red}{\textbf{**Jeff, include pictures of new datasets compared to old, like we had in the poster***}}
+\input{figures/bic_lines.tex}
+
+\subsection{External Validation Measures}
+Recovery and relevance scores, derived from  match score \cite{prelic2006systematic} are usually employed to evaluate the performance of biclustering algorithms.
+Match Score (MS) (also known as similarity score \cite{wang2016unibic}) between two sets of biclusters $\mathcal{S}_1$ and $\mathcal{S}_2$  is defined as:
+\begin{equation} \label{equation:match_score}
+	MS\left(\mathcal{S}_1, \mathcal{S}_2\right) =
+    	\frac{1}{\lvert \mathcal{S}_1 \rvert} \sum_{\mathcal{B}_1 \in \mathcal{S}_1} \max_{\mathcal{B}_2 \in \mathcal{S}_2} \frac{\lvert \mathcal{B}_1 \cap \mathcal{B}_2 \rvert}{\lvert \mathcal{B}_1 \cup \mathcal{B}_2 \rvert}
+\end{equation}
+which reflects the average of the maximum similarity for all
+biclusters $B_1$ in $S_1$ with respect to the biclusters $B_2$ in $S_2$. The intersection of two biclusters $\mathcal{B}_1 \in \mathcal{S}_1$ and $\mathcal{B}_2 \in \mathcal{S}_2$ denotes the set of rows common to both $\mathcal{B}_1$ and $\mathcal{B}_2$. Similarly, the union of two biclusters is the set of rows that exist in either $\mathcal{B}_1$ or $\mathcal{B}_2$ or both.
+The match score takes on values between 0 and 1, inclusive. In the case that no rows of any bicluster in $\mathcal{S}_1$ are found in any bicluster in $\mathcal{S}_2$, $\lvert \mathcal{B}_1 \cap \mathcal{B}_2 \rvert = 0$ for all possible $\mathcal{B}_1 \in \mathcal{S}_1$, $\mathcal{B}_2 \in \mathcal{S}_2$. Subsequently, MS = 0 (equation (\ref{equation:match_score}). Similarly, if the sets of biclusters $\mathcal{S}_1$ and $\mathcal{S}_2$ are identical, then both $\lvert \mathcal{B}_1 \cap \mathcal{B}_2 \rvert = \lvert \mathcal{S}_1 \rvert$ and $\lvert \mathcal{B}_1 \cup \mathcal{B}_2 \rvert = \lvert \mathcal{S}_1 \rvert$, yielding a match score of one. 
+%Then the summand of equation (\ref{equation:match_score}) is equal to one, and thus the sum is equal to $\lvert \mathcal{S}_1 \rvert$, 
+
+For a given dataset $D$, let $S(A_i)$ denote the set of biclusters returned by applying a specific biclustering algorithm $A_i$ on $D$,  while $G$ denotes the corresponding set of known ground truth biclusters for $D$. The \textbf{relevance score}, $MS(S, G)$, is a measure of the extent to which the generated biclusters $S(A_i)$ are similar to the ground truth biclusters in the gene (row) dimension. The \textbf{recovery score}, given by $MS(G, S)$, quantifies the proportion of the subset of $G$ that were retrieved by $A_i$. A high relevance score implies that a large percentage of the biclusters discovered by the algorithm are significant, while a high recovery score indicates that a large percentage of the actual ground truth biclusters are very similar to the ones returned by the algorithm. 
+
+%\subsection{Improving Match Scores}
+
+
+Consesus score was proposed in \cite{hochreiter2010fabia} as an alternative biclustering performance metric. It is defined as the consensus between the set of extracted biclusters and the set of true biclusters. It measures two things: (i) how much the two biclusters overlap (relative proportion of overlap); (ii) how many ``bicluster" elements contained in the union of the biclusters.
+However, this has very limited use in literature. Hence, we focus on enhancment of recovery and relevance scores in this work. 
+
+
+\begin{comment}
+(1) compute similarities between all pairs of biclusters by using Jaccard index, where one is from set $\mathcal{X}$ and the other from the set $\mathcal{Y}$;
+(2) assign the biclusters of one set to biclusters of the other set by maximizing the assignment by the Munkres algorithm, which is used to find the optimal assignment of n extracted biclusters to n ground truth biclusters.
+A set of elements of a matrix are said to
+be independent if no two of them lie in the same line (the word "line" applies
+both to the rows and to the columns of a matrix). 
+(3) divide the (sum of similarities of the assigned biclusters by the number of biclusters of the larger set.
+   sum  (similarities  of  assigned biclusters )/ number of larger set
+Note that : Step (3) is used to  penalizes different numbers of biclusters.The highest consensus is 1 and only obtained for identical sets of biclusters.
+\end{comment}
+
+The limitation of current recovery and relevance scores is that Biclustering inherently depends on both row and column clustering. 
+Existing measures only consider rows. We propose to address this by extending the current definition to consider both rows and columns.
+
+We define the \emph{symmetric} match scores as
+\begin{equation}
+    \text{SRec}(\mathcal{B}) = \frac{1}{2} \left( \text{Rec}(\mathcal{B}) + \text{Rec}(\mathcal{B}^T)\right)
+\end{equation}
+\begin{equation}
+    \text{SRel}(\mathcal{B}) = \frac{1}{2} \left( \text{Rel}(\mathcal{B}) + \text{Rel}(\mathcal{B}^T)\right)
+\end{equation}
+
+\noindent where $\mathcal{B}$ is a bicluster and $\mathcal{B}^T$ is the transpose of the bicluster.
+In terms of implementation, to calculate a match score of a transposed biclusters, simple replace the unions and intersections of rows in Equation~\ref{equation:match_score} with the respective operation on columns of the biclusters.
+
+A potential generalization of the symmetric match scores is also proposed.The method of improvement would be to weight the influence of row match score and column match score based on either the size of the dataset or the size of the true biclusters.For example, one could redefine the symmetric match scores as a convex combination for some $c \in [0, 1]$ based on the dataset:
+    \begin{equation}
+        \text{SRec}(\mathcal{B}) = c \cdot \text{Rec}(\mathcal{B}) + (1-c) \text{Rec}(\mathcal{B}^T)
+    \end{equation}
+    \begin{equation}
+        \text{SRel}(\mathcal{B}) = c \cdot \text{Rel}(\mathcal{B}) + (1-c) \text{Rel}(\mathcal{B}^T)
+    \end{equation}
+    The symmetric match scores used in our experiment correspond to choosing $c=0.5$.
+
+
+
+\begin{comment}
+There a sets of extracted biclusters$\mathcal{X}$\[x_1,x_{2},...,x_{p}\]and a sets of ground truth biclusters $\mathcal{Y}$\[y_{1},y_{2},...,y_{q}\] . 
+Here, a bicluster is supposed to be a set of index pairs (i, j) to identify matrix elements,
+i.e. expression values, which are grouped together. Then the similarity index matrix I is given as
+
+{I_{rs}} = Ja \[({x}_r, {Y}_s)\] ,
+where r ∈ {1, . . . , p} and s ∈ {1, . . . , q} and Ja is the Jaccard index. These indices measure the
+similarity of two biclusters – here the similarity between biclusters \[({x}_r\] and \[{Y}_s)\]
+
+They use the Munkres algorithm implemented in the R package to compute an optimal assignment of biclusters \[{X}_1, . . . , {X}_q\] to the true biclusters \[{Y}_1, . . . , {Y}_p\].
+The optimal assignment is given as a list of pairs
+((\[{r}_1, {s}_1),... , ({r}_{min(p,q)},{s}_{min(p,q)}\])
+The optimal score is given as
+M = \sum(\[{A}_r_i, {B}_r_i\])
+The final consensus score s is computed as
+s= \frac{M}{max(p,q)}
+
+\end{comment}
+
+\section{Evaluation}
+\label{sec:eval}
+\input{figures/num_bics.tex}
+\input{figures/results_before_enhancement.tex}
+\input{figures/nsga-comparison.tex}
+
+Comparative biclustering algorithms include eight from prior work \cite{icpram18}: Cheng \& Church (CC) \cite{cheng2000biclustering}, Evolutionary Biclustering based in Expression Patterns (EvoBexpa)\cite{pontes2013configurable}, Iterative Signature Algorithm (ISA) \cite{bergmann2003iterative}, Order-Preserving Submatrices Algorithm (OPSM) \cite{ben2003discovering}, Factor Analysis for Bicluster Acquisition (FABIA)~\cite{hochreiter2010fabia}, Penalized Plaid Model (PPM)~\cite{chekouo2015thepenalized}, UniBic~\cite{wang2016unibic}, and Biclustering based on PAttern Mining Software (BicPAMS)~\cite{henriques2017bicpams}. They are summarized in Table~\ref{tab:algsummary}. Only CC algorithm is metric-based, using MSR. We compared the eight algorithm and our proposed NSGA-II algorithm by using   Average  Spearman’s  Rho (ASR) metric.
+
+\subsection{Assessment of Evaluation Metrics}
+
+Figure \ref{fig:Before enhancement Unibic} illustrates the results of the performance of
+the eight algorithms and NSGA-II(ASR) in terms of relevance, recovery, symmetric relevance and symmetric recovery scores for ten types of biclusters datasets: 6
+types of square biclusters (trend-preserving, column constant, row-constant, shift-scale (combined), shift, scale) with each type having 15 associated datasets,
+a set of 20 overlapping datasets and a set of 9 narrow dataset, as well as a set of 9 new generated narrow TP dataset and new generated square trend-preserving datasets.
+
+
+We compared the relevance and symmetric relevance score  on both new generated trend-preserving and UniBic datasets. The biclusters returned by CC, EvoBexpa, and UniBic algorithms always have higher symmetric relevance sore than relevance score, which applied on all 10 types of datasets. PPM's returned biclusters have higher symmertic relevance score than relevance score on new square and UniBic datasets Type II to Type VI. ISA's biclusters have higher symmetric relevance score on eight datasets( except for Unbic Type I and Type II) than relevance score. FABIA's returned biclusters obtained higher symmetric relevance score on New Narrow TP, Unibic narrow, square shift-scale and shift, but its biclusters have lower symmetric relevance score on new square trend-preserving, UniBic square trend-preserving, column constant, row constant, scale and overlap. Similarly, OPSM's biclusters have lower symmetric relevance sore on UniBic narrow, new square trend-preserving, column constant, row constant and overlap datasets. Importantly, our proposed algorithm NSGA-II (fitness function is ASR) give higher symmetric relevance score on all eight dataests except for Unibic Narrow and Unibic Type III dataests. However, The biclusters returned by BicPAMS always have lower symmetric relevance sore on all the datasets, which means the biclusters returned by BicPAMS have high relevance with ground truth biclusters on rows, but adding bias on the columns had a negative influence on relevance. In addition, we compared the recovery and symmetric recovery score in Figure \ref{fig:Before enhancement Unibic} High recovery score indicates that a large percentage of the actual ground truth biclusters are very similar to the ones returned by the algorithm. Overall, the symmetric recovery score were reduced slightly compared to recovery score.
+
+Figure \ref{fig:enhancement sub(a)} and Figure \ref{fig:enhancement sub(b)}  shows the comparison between trend-preserving narrow and Unibic Narrow. For New narrow TP Dataset, algorithm PPM, NSGA-II and FABIA give the  best relevance and symmetric relevance score and the average value of PPM are falling around 0.5. If we rank the other algorithms by symmetric relevance score from high to low, they are OPSM, EvoBexpa, ISA, CC, Unibic and BIcPAMS. In addition, we can see algorithm CC, EVoBxepa, FABIA, ISA and NSGA-II (ASR) have higher symmetric relevance than the relevance score, which means the column match score have a positive influence on the trend-preserving Narrow bicluster. However, for the UniBic Narrow datasets, the distribution of both recovery and relevance are very wide. If we look at the recovery score of CC, the highest score is up to 0.8, but the lowest score is even less than 0.1. Interestingly, BicPAMS has the highest relevance score, but OPSM has the highest symmetric score. 
+By comparing the performance on these two Narrow datasets, the BicPAMS showed a very different result, it only have median value of relevance score 0.2 on narrow trend-preserving, but it have the median value of relevance score 0.6 on the Unibic Narrow. Similarly, comparing square trend-preserving and Unibic square trend-preserving (Type I), we found that both recovery and relevance scores have wider distribution on square trend-preserving dataset than the distribution on squaretrend-preserving. However, CC has a poor performance on these two types of datasets, the average of relevance and symmetric relevance score are only up to 0.1. The result of the rest of 5 types of square bicluster structures (trend-preserving,column-constant,  row-constant,  shift-scale,  shift,  scale) and overlapping datasets are shown in Figure \ref{fig:Before enhancement Unibic}.
+
+
+
+\subsection{Performance on FABIA benchmark dataset}
+We also tested the mentioned algorithms on Fabia dataset. The results of the experiments on noisy and noise free datasets before enhancement are shown in Figure \ref{fig:Before enhancement FIBIA} . The Fabia datasets are different from Unibic datasets, which includes set of 100 simulated datasets to attempt to match the characteristics of gene expression data better. The generated Fabia noise free data is mainly and only according to a multiplicative model structure, and the Fabia noisy dataset were added the additive noise to original datasets. However, the overall performance of these algorithms on Fabia datasests have lower relevance and recovery score than the score on Unibic datasets, because Fabia and Unbic datasets are generated differently. These algorithms have lower recovery score indicates that a small percentage of the actual ground truth biclusters are similar to the ones returned by the algorithm. The biclustering algorithms we mentioned above are more suitable on Unibic datasets.
+
+\subsection{Comparative of Performance of NSGA-II across multiple measures}
+We compared three internal bicluster validation measures (ASR, SCS, VEt) on their effectiveness as fitness functions in our proposed algorithm NSGA-II. Performance of these fitness functions with NSGA-II on the different datasets show in Figure \ref{fig: ALL datasets NSGA}.
+Based on the observation, we can see ASR, SCS and VEt are very good at detecting shift datasets. They all gave higher average symmetric relevance score than 0.8. ASR and SCS have a good performance on shift-scale and shift datasets and SCS gave high symmetric relevance (average 0.9) and symmetric recovery score ( average 0.6) on scale dataset, but ASR perform poorly on scale biclusters compared to SCS. In addition, the narrow trend-preserving, Square trend-preserving, and Unibic square trend-preserving have lower performance score compared to the rest of Unibic datasets. We find that ASR and SCS are able to detect both shifting and scaling patterns of biclusters, as well as shift-scale biclusters but they have difficulty with trend-preserving biclusters.
+Specially, in figure \ref{fig: ALL datasets NSGA}, we can see, NSGA-II give very high performance score by using VET validation measure. However, when we compute VET on row constant data, the standard deviation at least one row is zero. So we set to one if any zero-division errors occurred. This does produce false negatives in the case that a constant row is part of a constant bicluster. Moreover, using ASR measures on overlap biclusters and square column constant biclusters provided higher symmetric recovery and symmetric relevance score compared to using SCS or VET.
+
+\subsection{Effect of Enhancement Framework}
+Biclustering algorithms usually output a very large set of biclusters (based on algorithm specific stop criterion) while some include a user specified parameter to define the number of biclusters to generate. Some of the mentioned biclustering algorithms are not deterministic which means that multiple repetitions of the same experiment with such algorithms do not necessarily yield identical results. Properties of algorithms analyzed in this paper, such as determinism vs. non-determinism, are described in Table \ref{tab:algsummary}. It is desirable for the discovered set of biclusters to be a manageable number of highly relevant since the discovered biclusters require significant human effort for further evaluation to determine biological significance. we have proposed an enhancement framework to improve biclusters'performance score in our another paper \cite{dale2018performance}. In this work, we applied this enhancement framework on improving symmetric relevance and symmetric recovery score. We applied four internal validation measures: ASR, SCS, VEt and TPc on the ones that do not require a user-specified parameter of number of biclusters plus CC algorithm. The strength of the proposed framework is that it work as a "filter" to help detect highly relevant bicluster among a large set of output biclusters. The method of improving the relevance of a set of biclusters S is described as four steps : 1) Choose an internal validation measure M and a number of desired biclusters n, where n less than the total number of bicluster S; 2) Compute M(B) for each bicluster $B \in S$; 3) Order each bicluster in $B\in     S$ from best to worst according to the validation M(B); 4) Retain the best n biclusters according to M. It is important to note that while symmetric relevance scores are improved with our method, symmetric recovery scores are negatively impacted. By reducing the number S, the initial size of the output biclusters, the symmetric recovery score will be less than or equal to that of the initial list. Thus, our goal is to maximize the increase in symmetric relevance scores while minimizing the decrease in symmetric recovery scores. Ideally, we desire to filter out biclusters with redundant or insignificant information.
+
+Table \ref{tab: The description of Synthetic Datasets } shows the description of all the synthetic datasets and the mean number of biclusters returned by each algorithm. In algorithm CC, EvoBexpa, FABIA and PPM The number of biclusters was required as a user parameter, and we set the number to 20, 5, 10 and 10.(\textbf{***This parameter setting based on multiple experiments, we compared these the results by using the different parameters, it turns out these setting gave the best performance score, we have the comparison table show in our supplementary file***}). In addition, CC was set to return biclusters with a maximum MSR score of 0.1. For OPSM, the number of passed models between iterations used was
+10. PPM was implemented using the recommended parameters of the GPE method \cite{chekouo2015thepenalized}.
+For the performance enhancement evaluation, the desired number of biclusters n is set to 3g for Unibic and trend-preserving datasets, and n is set to 2g for Fabia datasets, where g is the actual number of biclusters present in the dataset (based on the ground truth information). Thus, the evaluation results presented demonstrate the impact on both symmetric relevance and symmetric recovery scores with a very minimal number of clusters selected 3g ( or 2g). In actual practice, n can be set to the number that the user is comfortable using for further evaluation. 
+
+In our case, the algorithms that benefit the most from the enhancement framework are those that return a large number of biclusters, such as BicPAMS, ISA UniBic. When these algorithms are applied to real gene expression datasets, the number of returned biclusters is usually too large to manually examine. By applying the enhancement method, results of these algorithms
+are much more manageable, and each bicluster examined is more likely to contain biologically significant information. According to Table \ref{tab: The description of Synthetic Datasets }, EvoBexpa, FABIA and PPM algorithms are the algorithms that actually returns less than this parameter initially i.e. before enhancement. Although OPSM returned the number of bicluster more than three times the actual number of ground truth biclusters, it do not make any significant difference compare to BicPAMS, Unibic and ISA, so we will not include these four in our evaluation.
+
+As can be observed from Table \ref{tab: enhancement framework},  the effect of the enhancement framework on the performance of the algorithms in terms of symmetric relevancy and symmetric recovery scores. Given that the returned number of biclusters is less, the loss in symmetric recovery is inevitable, we can observed that the average improvement percentage of symmetric recovery reduced across all tested datasets. However, it is still meaningful to observe the effect on the symmetric relevance of the results. Overall, applying the enhancement framework on BicPAMS and ISA by using the ASR yields a more positive impact on the symmetric relevance scores compared to the rest three measures. All these four matures have made better improvement on Unibic algorithm than that of other three algorithms. 
+\input{figures/realgen_table.tex}
+\subsection{Real Data Analysis}
+
+We consider three real gene expression datasets that have been provided
+by the Broad Institute and were previously analyzed by Hochreiter et.al in \cite{hochreiter2010fabia}. Our goal is to analyze how well our NSGA-II algorithm are able to re-identify gene expression biclusters without any other information. 
+
+
+The description of real gene datasets and the mean number of returned bicluster by using differnt algorithms shown in Table \ref{tab:description of real gene }
+\textbf{(A) ‘breast cancer’ dataset as aimed at a predictive gene signature for the outcome of a breast cancer therapy.We removed the outlier array S54 that leads to a dataset with 97 samples and 1213 genes.
+(B) The ‘multiple tissue types’ dataset (Su et al., 2002) are gene expression profiles from human cancer samples from diverse tissues and cell lines. The dataset contains 102 samples with 5565 genes.(C) The ‘diffuse large-B-cell lymphoma (DLBCL)’ dataset was aimed at predicting the survival after chemotherapy. It contains 180 samples and 661 genes}
+
+
+For the biological interpretation of the results, we applied
+gene ontology (GO)gene expression analysis. We
+provide a summary of these analysis results in Table*****
+
+
+Internal validation measures provide a means of evaluating quality of biclusters obtained without the knowledgeof  ground  truth;  which  is  very  useful  for  real  datasets  for which ground truth is unknown. 
+
+
+
+
+
+
+
+% \textbf{Sets of experiments conducted to demonstrate what...
+% \begin{itemize}
+%     \item Rel \& rec scores vs. symmetric scores*** [would decide on this later].
+%     \item performance of various fitness functions with NSGA-II on the different datasets (unibic and new ones) - table
+%     \item performance of other comparative algorithms 
+%     \item effect of enhancement framework
+%     \item should we separate new dataset vs old dataset.
+% \end{itemize}}
+
+\section{Discussion}
+    \label{sec:disc}
+    % The proposed symmetric recovery and relevance measures have an inherent bias toward the columns of the biclusters in the frequent case that there are significantly more rows than columns.
+    % One method of improvement would be to weight the influence of row match score and column match score based on either the size of the dataset or the size of the true biclusters.
+    % For example, one could redefine the symmetric match scores as a convex combination for some $c \in [0, 1]$ based on the dataset:
+    % \begin{equation}
+    %     \text{SRec}(\mathcal{B}) = c \cdot \text{Rec}(\mathcal{B}) + (1-c) \text{Rec}(\mathcal{B}^T)
+    % \end{equation}
+    % \begin{equation}
+    %     \text{SRel}(\mathcal{B}) = c \cdot \text{Rel}(\mathcal{B}) + (1-c) \text{Rel}(\mathcal{B}^T)
+    % \end{equation}
+    % The symmetric match scores used in our experiment correspond to choosing $c=0.5$.
+    
+ 
+\section{Conclusion}
+    \label{sec:conc}
+
+
+

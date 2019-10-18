@@ -1,0 +1,257 @@
+\section{Multi-objective Biclustering Framework}
+\label{sec:framework}
+
+Evolutionary learning is commonly regarded as an efficient metaheuristic technique and has been successfully used for various optimization problems because of its excellent exploratory capability in a global search space~\cite{huang2012parallelized}.
+The biclustering problem can be viewed as a combinatorial optimization problem, multiple evolutionary-based biclustering methods (EBMs) have been proposed in literature \cite{pontes2013configurable,huang2012parallelized,gallo2009bihea}.
+An EBM inserts the biclustering techniques into an evolutionary learning framework. EBMs define one or more fitness functions, which measure how well a candidate solution solves the specified problem. The fitness functions could include parameters such as size, variance, or mean squared residue score of biclusters. 
+Starting with a initial population, the EBM selects some individuals and recombines them using crossover and mutation to generate a new population.
+The process is repeated for a number of generations until termination conditions (such as maximum number of generations, satisfactory fitness values, etc) are met.
+
+%A review of other EBMs is presented, to provide a context for the MOEA biclustering framework.  Gallo et al. proposed Biclustering via a Hybrid Evolutionary Algorithm (BiHEA) \cite{gallo2009bihea}. This is an extension of the first reported EBM - Bleuler-B~\cite{bleuler2004ea}. It applies a hybrid approach that integrates evolutionary algorithms with local search based on the CC biclustering algorithm \cite{cheng2000biclustering} to solve the biclustering problem. The goal is to generate near optimal biclusters with coherent values following an additive model. BiHEA's fitness functions differs from our approach as it incorporates size, MSR score, and variance of the biclusters.
+
+%The Condition-Based Evolutionary Biclustering (CBEB) algorithm~\cite{huang2012parallelized} is another hybrid approach which integrates hierarchical clustering with evolutionary algorithm. The hierarchical clustering is applied to divide the condition dimension (i.e. the columns) search space into subspaces. By parallelizing the search process, they are able to improve the efficiency and effectiveness of the evolutionary algorithm. CBEB utilizes an ''expand and merge`` method to combine the biclusters from each subset of conditions into larger biclusters. Their fitness function is also based on the MSR score, similar to BiHEA.
+
+%Orzechowski et al. proposed the Evolutionary-based biclustering algorithm (EBIC)~\cite{orzechowski2018ebic}. It is a hybrid approach that employs a different representation for the biclusters: a series of column indices instead of combinations of a set of rows and a set of columns. 
+%The generated population are stored in a compressed bicluster format (CBF). The CBF format is able to determine the starting positions of each of the biclusters and holds indexes of columns of biclusters. Similar to CBEB, they also divide the data matrix into chunks for more efficient parallelized search. In addition, EBIC conducts the parallel search using multiple GPUs. EBIC's fitness function includes a penalty factor to promote population diversity, which increases the likelihood of individuals with underrepresented columns to be place in the population.
+
+\subsection{NSGA-II Genetic Algorithm}
+%The biclustering problem can be viewed as a combinatorial optimization problem, which evolutionary algorithms excel at solving~\cite{muhlenbein1988evolution}.
+% 
+The MOEA framework utilizes the NSGA-II multi-objective evolutionary algorithm \cite{deb2002fast} given its ease of implementation and flexibility.
+It allows for more adaptability compared to a single-objective genetic algorithm. Objectives can be added or removed, as needed. 
+Starting with an initial gene expression matrix, the goal is to find the subset of rows and subset of columns that together optimize the fitness functions.
+The multi-objective approach returns a set of Pareto optimal biclusters. The MOEA framework also includes a local search finisher (hill climbing algorithm) to improve the solutions returned by the evolutionary algorithm. 
+%The overall  framework is illustrated in Figure~\ref{fig:workflow}. \input{figures/workflow.tex}
+
+\subsubsection*{Chromosome Representation}
+A known representation for optimal subset problems is to apply a binary string with same length as the size of the superset.
+An entry of one at position $i$ in this string indicates that the member of the superset at position $i$ is included in the subset.
+An entry of zero at a position indicates the opposite.
+For example, the subset $\{2, 4, 5\}$ of $\{1, 2, 3, 4, 5\}$ would be encoded as the binary string $01011$.
+This representation can be applied to biclustering by using a binary string of length $m+n$ where $m$ is the total number of genes and $n$ is the total number of samples~\cite{mitra2006multi}.
+%Most genetic operators are standard with this representation, with the exception of crossover.
+
+\subsubsection*{Parent Selection}
+The selection operator used in this work is binary tournament selection as specified by Deb et al.~\cite{deb2002fast}, making use of NSGA-II's crowding distance operator.
+In essence, two individuals are randomly selected from the population, and the one with higher fitness is chosen to undergo genetic variation and survive to the next generation.
+This process is repeated until the number of selected individuals is equal to the population size.
+
+\subsubsection*{Parent Crossover}
+The crossover operator applied in this work is the single-point crossover. It is imperative that crossover is performed separately on the gene and sample components of the representation.
+If crossover were to be performed directly on the entire individual, the sample phenotype would often be changed drastically as the information containing the samples in the bicluster is at the end of the genotype.
+In this situation, the gene phenotype would largely stay the same as it occurs at the beginning of the genotype.
+
+\subsubsection*{Offspring Mutation}
+The mutation operator is a simple bit flip mutation, in which each given bit is swapped between 0 and 1 with a specified probability $p$.
+The expected number of changes to the genotype during each mutation event is $(i+j)p$ for an $i \times j$ bicluster.
+Unlike crossover, since each mutation is independent for each bit, it does not matter if mutation is done on the entire genotype or on the gene and sample components separately.
+In this work, mutation was performed on the entire genotype.
+
+\subsubsection*{Solution Archiver}
+Archiving is slightly modified from the standard NSGA-II algorithm in order to produce relevant biclusters. 
+%During the testing with the original NSGA-II archiver, many extremely similar biclusters were discovered and archived once fitness had reached its minimum value (on noise-free synthetic datasets).
+The archiver is modified so that when a new member is added to the archives with a tie in fitness, it can be absorbed into an existing archive member if
+\begin{equation} \label{eq:overlap}
+	\frac{\left\lvert \left( A_I \cup A_J \right) \cap \left( B_I \cup B_J \right)\right\rvert}
+	{\max \left\{ \left\lvert A_I \cup A_J \right\rvert, \left\lvert B_I \cup B_J \right\rvert \right\}} > \delta
+\end{equation}
+for some prescribed overlap ratio $\delta$, where $A$ is an existing archive member and $B$ is a newly archived bicluster. $A_I$ and $A_J$ represent the set of genes and samples in the bicluster $A$, respectively, and the same holds for $B$. Intuitively, equation~(\ref{eq:overlap}) is the number of shared genes and conditions between the two biclusters $A$ and $B$ divided by the number of total genes and samples in the larger bicluster.
+
+When applied to the binary string representations of the biclusters, equation~(\ref{eq:overlap}) can be computed quickly by bitwise operators:
+\begin{equation}
+	\frac{W(A \land B)}{\max \{ W(A), W(B)\}} > \delta
+\end{equation}
+where $W$ is the Hamming weight function.
+
+If there is more than one existing archive member, the best pairwise overlap among archive members is computed. While at least one pair of archive members, including the newly introduced archive member, has overlap ratio larger than $\delta$, merging of biclusters continues in the archive. This ensures that the returned number of biclusters is relevant.
+
+ If bicluster $A$ is absorbed by bicluster $B$, or $A$ is merged with $B$, then the resulting bicluster $C$ has genes given by the union of the genes of $A$ and $B$ and samples given by the union of the samples of $A$ and $B$. In the binary string representation, this process is equivalent to calculating
+\begin{equation}
+	C = A \lor B
+\end{equation}
+
+\subsubsection*{Generation of Candidate Solutions}
+The process of generating candidate solutions is crucial for EBMs. Poorly generated candidate solutions can slow down the convergence of the evolutionary algorithm, or even cause it to be stuck in local optima.
+In this work, the candidate solutions are generated according to two separate Bernoulli distributions: one for the gene components (with probability $p_g$) and one for the sample components (with probability $p_s$).
+This separation allows the user to guide the shape and size of the biclusters based on the problem at hand.
+Increasing $p_g$ while leaving $p_s$ constant results in biclusters with more genes relative to the samples, and vice versa.
+Increasing (or reducing) $p_g$ and $p_s$ jointly will yield larger (or smaller) biclusters however the ratio of genes to samples would be relatively constant.
+
+\subsection{Fitness Functions}
+An essential component of genetic algorithms is how the fitness of a candidate solution is computed. A well-chosen fitness function results in discovery of high quality solutions. 
+The MOEA fitness functions utilize known biclustering internal validation measures~\cite{pontes2015quality}.
+Internal validation measures provide a means of evaluating quality of biclusters obtained without the knowledge of ground truth. 
+This work compares the effectiveness of 3 internal bicluster validation measures (Average Spearman's rho (ASR), Submatrix Correlation Score (SCS) and Transposed Virtual Error (VE$^T$)) as fitness functions in the MOEA framework. These measures were determined to be proficient at identifying biclusters patterns based on shifting, scaling or shift-scale (combined pattern)~\cite{pontes2015quality}.
+
+\subsubsection*{Average Spearman's Rho}
+The Average Spearman's Rho (ASR) \cite{ayadi2009biclustering} measure 
+%ASR is one of the few bicluster quality measures that can detect both shifting and scaling patterns of biclusters, as well as shift-scale (combined pattern) biclusters~\cite{pontes2015quality}.
+is an adaptation of the Spearman's Rho \cite{lehmann1975nonparametrics} correlation coefficient to assess bicluster quality. Spearman's Rho is defined as
+\begin{equation}\label{spearman_rho}
+	\rho(x, y) = 1 - \frac{6}{m(m^2-1)} \sum_{k=1}^{m} \left(r\left(x_k\right) - r\left(y_k\right)\right)^2
+\end{equation}
+for two vectors $x$ and $y$ of equal length $m$, where $r(x_k)$ and $r(y_k)$ are the ranks of $x_k$ and $y_k$, respectively. Let
+\begin{equation}
+	\rho_{\normalfont{gene}} = \frac{\sum_{i \in I} \sum_{j \in I, j > i} \rho(i, j)}{\lvert I \rvert \cdot \left(\lvert I \rvert - 1\right)}
+\end{equation}
+\begin{equation}
+	\rho_{\normalfont{condition}} = \frac{\sum_{i \in J} \sum_{j \in J, j > i} \rho(i, j)}{\lvert J \rvert \cdot \left(\lvert J \rvert - 1\right)}
+\end{equation}
+
+\noindent ASR is defined as
+\begin{equation} \label{asr}
+	ASR(\mathcal{B}) = 2 \cdot \max\left\{\rho_{\normalfont{gene}}, \rho_{\normalfont{condition}}\right\}
+\end{equation}
+
+\noindent where $ASR(\mathcal{B}) \in \left[-1, 1\right]$.  $|ASR(\mathcal{B})| = 1$ indicates a perfect trend-preserving bicluster. 
+
+\subsubsection*{ Submatrix Correlation Score}
+Tthe Submatrix Correlation Score (SCS)~\cite{yang2011finding} is based on the Pearson correlation measure.
+SCS is defined as the row or column of the bicluster exhibiting largest (in magnitude) average correlation with other rows or columns, respectively.
+Let
+\begin{equation}
+	S_{row} = \min_{i_1 \in I} \left\{ 1 - \frac{\sum_{i_2 \in I, i_2 \ne i_1} |\rho(r_{i_1}, r_{i_2})|}{I-1} \right\}
+\end{equation}
+\begin{equation}
+	S_{col} = \min_{j_1 \in J} \left\{ 1 - \frac{\sum_{j_2 \in J, j_2 \ne j_1} |\rho(c_{j_1}, c_{j_2})|}{J-1} \right\}
+\end{equation}
+where $\rho$ denotes Pearson correlation, $r_i$ denotes row vector $i$ of the bicluster having $I$ rows, and $c_j$ denotes column vector $j$ of the bicluster having $J$ columns.
+SCS is then given by the minimum of these two values:
+\begin{equation}
+	SCS = \min\left\{S_{row}, S_{col}\right\}
+\end{equation}
+SCS can detect shift, scale, and shift-scale biclusters, however, it exhibits some difficulty with trend-preserving biclusters given that it focuses on linearly correlated biclusters.
+
+\subsubsection*{ Transposed Virtual Error}
+Transposed Virtual Error (VE$^T$) \cite{pontes2010measuring} is an improvement on Virtual Error (VE) \cite{pontes2007virtual} measure.
+Both VE and VE$^T$ required standardized biclusters. A bicluster is standardized by subtracting the row mean from each element of the bicluster and dividing by the row standard deviation, i.e.
+\begin{equation}\label{standardize_bicluster}
+	\hat{\mathcal{B}} = \frac{\mathcal{B}_{ij} - \mu_{iJ}}{\sigma_{iJ}}, \quad i = 1, 2, ..., \lvert I \rvert, \quad j = 1, 2, ..., \lvert J \rvert
+\end{equation}
+where $\mu_{iJ}$ is the mean of row $i$ in $\mathcal{B}$ and $\sigma_{iJ}$ is the standard deviation of row $i$ in $\mathcal{B}$.
+
+VE computes a virtual gene $\rho$, which is a vector imitating a gene whose entries are column means across all genes in the bicluster.  Explicitly, the standardized virtual gene is calculated for a standardized bicluster $\hat{\mathcal{B}}$ as
+\begin{equation} \label{virtual_gene}
+	\hat{\rho_{j}} = \frac{1}{\lvert I \rvert} \sum_{i=1}^{\lvert I \rvert} \hat{\mathcal{B}}_{ij}, \quad j = 1, 2, ..., \lvert J \rvert
+\end{equation}
+Finally, VE is defined as
+\begin{equation}\label{ve}
+	VE(\mathcal{B}) = \frac{1}{ \lvert I \rvert \cdot \lvert J \rvert } \sum_{i=1}^{\lvert I \rvert} \sum_{j=1}^{\lvert J \rvert} \lvert \hat{\mathcal{B}}_{ij} - \hat{\rho_j} \rvert
+\end{equation}
+To compute VE$^T$, transpose the bicluster prior to calculating VE. VE$^T$ computes a virtual condition $\rho$ and measures the deviation of conditions in the bicluster from $\rho$. The virtual condition $\rho$ is defined as
+\begin{equation}\label{virtual_condition}
+	\hat{\rho_{i}} = \frac{1}{\lvert J \rvert} \sum_{j=1}^{\lvert J \rvert} \hat{\mathcal{B}}_{ij}, \quad j = 1, 2, ..., \lvert J \rvert
+\end{equation}
+and VE$^T$ is given by
+\begin{equation}
+	VE\textsuperscript{T}(\mathcal{B}) = \frac{1}{ \lvert I \rvert \cdot \lvert J \rvert } \sum_{i=1}^{\lvert I \rvert} \sum_{j=1}^{\lvert J \rvert} \lvert \hat{\mathcal{B}}_{ij} - \hat{\rho_i} \rvert
+\end{equation}
+
+
+VE$^T$ is equal to zero for perfect shifting or scaling or shift-scale patterns.
+
+%\noindent\ {\bf Special Cases for VE$^T$}.
+%Constant rows in expression data pose an issue when computing VE$^T$. When one or more rows are constant, the standard deviation of at least one row is zero, and thus the result of equation~(\ref{standardize_bicluster}) is undefined. 
+%A constant row is highly unlikely in real data applications, so a standard deviation of zero should be a non-issue. For the synthetic data experiments, VE$^T$ is set to one if any zero-division errors occurred. This does produce false negatives in the case that a constant row is part of a constant bicluster. 
+
+For the experiments, a single objective function is utilized to compare the performance of these fitness functions. The fitness functions can be combined and expanded depending on the application. Multiple replicate experiments of the MOEA method often converge to the same solutions. Communication between iterates is essential to prevent the algorithm from converging to the same solution multiple times which can be attained via a parallelizeable implementation.
+
+%where the same solution can be found multiple times.
+%Repeated solutions build confidence that the discovered solution is a global optima rather than a local optima, however especially noisy biclusters are less likely to be found than noise-free biclusters which produce better fitness values.
+
+\subsection{Enhancement of External Validation Measures}
+
+Recovery and relevance scores, derived from  match score \cite{prelic2006systematic}, are usually employed to evaluate the performance of biclustering algorithms on data for which the ground truth is known.
+Match Score (MS) (also known as similarity score \cite{wang2016unibic}) between two sets of biclusters $\mathcal{S}_1$ and $\mathcal{S}_2$  is defined as:
+\begin{equation} \label{equation:match_score}
+	MS\left(\mathcal{S}_1, \mathcal{S}_2\right) =
+    	\frac{1}{\lvert \mathcal{S}_1 \rvert} \sum_{\mathcal{B}_1 \in \mathcal{S}_1} \max_{\mathcal{B}_2 \in \mathcal{S}_2} \frac{\lvert \mathcal{B}_1 \cap \mathcal{B}_2 \rvert}{\lvert \mathcal{B}_1 \cup \mathcal{B}_2 \rvert}
+\end{equation}
+which reflects the average of the maximum similarity for all
+biclusters $B_1$ in $S_1$ with respect to the biclusters $B_2$ in $S_2$. The intersection of two biclusters $\mathcal{B}_1 \in \mathcal{S}_1$ and $\mathcal{B}_2 \in \mathcal{S}_2$ denotes the set of rows common to both $\mathcal{B}_1$ and $\mathcal{B}_2$. Similarly, the union of two biclusters is the set of rows that exist in either $\mathcal{B}_1$ or $\mathcal{B}_2$ or both.
+The match score takes on values between 0 and 1, inclusive. In the case that no rows of any bicluster in $\mathcal{S}_1$ are found in any bicluster in $\mathcal{S}_2$, $\lvert \mathcal{B}_1 \cap \mathcal{B}_2 \rvert = 0$ for all possible $\mathcal{B}_1 \in \mathcal{S}_1$, $\mathcal{B}_2 \in \mathcal{S}_2$ thus, $MS = 0$ (equation (\ref{equation:match_score}). Similarly, if the sets of biclusters $\mathcal{S}_1$ and $\mathcal{S}_2$ are identical, then $\lvert \mathcal{B}_1 \cap \mathcal{B}_2 \rvert = \lvert \mathcal{S}_1 \rvert$ and $\lvert \mathcal{B}_1 \cup \mathcal{B}_2 \rvert = \lvert \mathcal{S}_1 \rvert$,and $MS = 1$. 
+%Then the summand of equation (\ref{equation:match_score}) is equal to one, and thus the sum is equal to $\lvert \mathcal{S}_1 \rvert$, 
+
+For a given dataset $D$, let $S_{A_i}$ denote the set of biclusters returned by applying a specific biclustering algorithm $A_i$ on $D$,  while $G$ denotes the corresponding set of known ground truth biclusters for $D$. The relevance score, $MS(S, G)$, is a measure of the extent to which the generated biclusters $S_{A_i}$ are similar to the ground truth biclusters in the gene (row) dimension. The recovery score, given by $MS(G, S)$, quantifies the proportion of the subset of $G$ that were retrieved by $A_i$. A high relevance score implies that a large percentage of the biclusters discovered by the algorithm are significant, while a high recovery score indicates that a large percentage of the actual ground truth biclusters are very similar to the ones returned by the algorithm. 
+
+The limitation of current recovery and relevance scores is that biclustering inherently depends on both row and column clustering. Existing measures only consider rows. A more complete adaptation is proposed by extending the current definition to consider a weight of both rows and columns.
+
+The \emph{symmetric} match scores is defined as
+\begin{equation}
+    \text{SRec}(\mathcal{B}) = \alpha \text{Rec}(\mathcal{B}) + (1 -\alpha) \text{Rec}(\mathcal{B}^T)
+\end{equation}
+\begin{equation}
+    \text{SRel}(\mathcal{B}) = \alpha \text{Rel}(\mathcal{B}) + (1 -\alpha) \text{Rel}(\mathcal{B}^T)
+\end{equation}
+
+\noindent where $\mathcal{B}$ is a bicluster and $\mathcal{B}^T$ is the transpose of the bicluster and $0 \leq \alpha \leq 1$. The weight $\alpha$ can be determined based on data application. In this work, $\alpha = 0.5$. 
+%The enhanced symmetric recovery and relevance measures have an inherent bias toward the columns of the biclusters in the frequent case that there are significantly more rows than columns.
+%In terms of implementation, to calculate a match score of a transposed biclusters, simple replace the unions and intersections of rows in Equation~\ref{equation:match_score} with the respective operation on columns of the biclusters.
+
+\subsection{Benchmark Data}
+\label{sec:syndata-review}
+
+\subsubsection*{ Trend-Preserving Data Generator}
+To effectively evaluate the biclustering algorithms, benchmark synthetic data are utilized to ensure availability of ground-truth data for performance evaluation.
+However, there is always the concern of whether the synthetic data generation captures the complexity of real applications.
+Mukhopadhyay et al.\cite{mukhopadhyay2010biclustering} defined six models of biclusters: constant, constant row, constant column, additive pattern, multiplicative pattern, and additive-multiplicative patterns.
+The additive-multiplicative model is the general model for all six cases.
+Two other, often more biologically relevant, bicluster models are order-preserving and trend-preserving biclusters~\cite{wang2016unibic}.
+Order preserving biclusters are biclusters whose rows have equal ranks.
+Trend-preserving (TP) biclusters extend order-preserving biclusters to allow ranks of each row to be reversed, capturing both strong positive and strong negative correlation between rows.
+Biologically, genes which are co-regulated under a subset of experimental conditions exhibit expression patterns which are trend-preserving, but may be quite different in value under those conditions~\cite{wang2016unibic}.
+Two gene expression patterns are trend-preserving if and only if their corresponding vectors are either order-preserving or order-reversing. 
+
+Current TP data generators, such as available in the UniBic data~\cite{wang2016unibic}, have a predictable pattern (see Fig.~\ref{fig:biclustermodels}a) and consist only of square biclusters. Real gene expression data tend to have much more samples (genes) than conditions (columns) as well as less predictable TP patterns (see Fig.~\ref{fig:biclustermodels}c).
+Square biclusters have the same number of genes and conditions in each bicluster while narrow biclusters contain many more genes than conditions, similar to real data applications.
+This work presents a data generator tool, Dale TP data generator summarized in Algorithm~1 (https://github.com/clslabMSU/Biclustering-MOEA). The hypothesis is that a more robust data generator would have similar patterns to a known bicluster obtained from a real data set. Fig.~\ref{fig:biclustermodels}c illustrates a bicluster pattern from a breast gene expression data provided by the Broad Institute and analyzed by Hochreiter et.al in \cite{hochreiter2010fabia}.  As shown in Fig.~\ref{fig:biclustermodels}, the Dale TP data consists of more varied TP patterns similar to the real data distribution. The parameters of the simulator can be readily varied to allow for greater flexibility and control in generating TP benchmark data.    
+ In the empirical analysis, we focus both square and narrow Dale TP data. The simulator can be modified to generate a large number of datasets of varied distributions. 
+
+\begin{figure}[t]
+    \centering
+    \subfigure[Unibic TP Pattern]{\includegraphics[width=0.9in]{"images/bicluster_models/tp1"}}\qquad
+    \subfigure[ Dale TP Pattern]{\includegraphics[width=0.9in]{"images/bicluster_models/tp2"}}\qquad
+    \subfigure[Breast  Pattern]{\includegraphics[width=0.9 in]{"images/real gene/breast"}}
+    \caption{
+        Comparison of UniBic trend preserving (TP) datasets vs. proposed Dale TP datasets. As can be observed, the Dale TP datasets have less of a predictable pattern, more similar to real data application.
+    }
+    \label{fig:biclustermodels}
+\end{figure}
+
+\subsubsection*{Other Datasets Utilized}
+We utilized two datasets in this work for a more robust evalution: UniBic datasets~\cite{wang2016unibic} and FABIA datasets~\cite{hochreiter2010fabia}. 
+The UniBic data were generated with the BiBench framework~\cite{eren2012comparative}.
+It consists of 6 groups of square bicluster structures (TP, column-constant, row-constant, shift-scale, shift, scale) as well as 3 overlapping datasets and 3 narrow datasets for a total of 119 datasets.
+
+The FABIA datasets ~\cite{hochreiter2010fabia} attempts to match the characteristics of gene expression data using the following model for the generated  biclusters and additive noise. $
+	X =  \sum_{i=1}^{\rho }\lambda_{i} z_{i}^{T} +\Upsilon.
+$
+The vector $\lambda$ corresponds
+to a prototype column vector that contains zeros for genes not participating in the bicluster; z is a vector of factors with which the prototype column vector is scaled for each sample, the outer product $\lambda z_{}^{T}$ of two sparse vectors results in a matrix with a bicluster, and $\Upsilon \in R^{n*l}$ is additive noise. It consists of 100 datasets for each category.
+
+\input{algorithms/syntheticdata.tex}
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+ %The datasets match the characteristics of gene expression data in terms of the heavy tails but mainly limited to multiplicative model structure. %There is another dataset available on their website that utilizes the additive model structure.
+
+
+
+
+

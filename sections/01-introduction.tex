@@ -1,0 +1,49 @@
+%  \IEEEraisesectionheading{
+% \section{Introduction}
+% \label{sec:introduction}}
+\section{Introduction}
+\label{sec:introduction}
+A key challenge in biological data analysis is  characterization of genetic factors that underlie phenotypic differences. 
+Microarrays can be used
+to collect a large amount of gene expression information,
+which can be used to profile various kinds of biological
+changes~\cite{huang2012parallelized}.
+Such data hold great potential to understand how particular genes are expressed in an organism's phenotype, and also how these genes contribute to the organism's susceptibility to a disease or trait.
+An understanding of how to organize, process, and transform these data into useful domain knowledge is crucial.
+Unsupervised learning models are useful in understanding patterns in data.
+In gene expression data analysis, the overall hypothesis is that small sets of genes may drive multiple cellular processes and not necessarily span the entire condition subspace. %\cite{xu2011bartmap}.
+Hence, one-dimensional clustering methods may not uncover optimal/useful local condition patterns of genes.
+Biclustering offers a solution by performing simultaneous clustering in two dimensions. It integrates feature selection and clustering without any prior information.
+
+The relationship between clusters of genes (rows, features) and clusters of samples (columns, conditions) are established in the biclustering process. A bicluster is a submatrix with a subset of rows behaving similarly across a subset of columns.
+%The goal of a biclustering algorithm is to identify a set of biclusters with pairs of row and column subsets.
+Given a gene expression matrix $M$, the entries of a single bicluster $B$ referenced by the set of genes $I$ and set of samples $J$ is given by
+\begin{equation}
+	B_{ij} = \left\{ M_{ij}\ \mathrm{such\ that}\ i\in I\ \mathrm{and}\ j\in J \right\}
+\end{equation}
+ such that the entries indexed by the Cartesian product of these sets exhibit a distinct correlated pattern.
+Biclustering algorithms perform local clustering on subset of genes and conditions with the objective of identifying an optimal set of biclusters $B$. These biclusters are useful for discovering patterns of co-regulated/co-expressed genes across a subset of samples in gene expression data~\cite{pontes2015biclustering}.
+Biclustering is an NP hard problem. Thus the only perfect biclustering algorithm is an exhaustive search, which is computationally intractable on large datasets.
+In the past two decades, there has been an influx of proposed biclustering algorithms, as reviewed in~\cite{prelic2006systematic, eren2012comparative, oghabian2014biclustering, pontes2015biclustering, roy2016analysis}.
+Multi-objective optimization~\cite{deb2014multi} techniques are suited for addressing the challenge of identifying the global optima in very large search spaces with potentially conflicting objectives. 
+
+This work applies a multi-objective evolutionary algorithm (MOEA) framework to address the biclustering problem. The MOEA framework is based on the Non-dominated Sorting Genetic Algorithm (NSGA-II)~\cite{deb2002fast}, combined with a novel local search hill climber tailored for the biclustering problem. The NSGA-II algorithm, being an MOEA, can support any number of fitness functions and return a set of Pareto-optimal biclusters.
+This algorithm differs from other evolutionary based biclustering algorithms~\cite{pontes2013configurable, mitra2006multi} both in fitness measure and in post-processing methods.
+In addition, this paper addresses generation of appropriate benchmark data for unsupervised learning applications and improvement of existing external validation metrics.
+The novel synthetic data generation tool is useful for generating biclusters of varying distributions for a wide range of trend-preserving standard benchmark data. This is useful for evaluate performance of biclustering algorithms.
+%In unsupervised learning applications such as gene expression data analysis, where ground truth is not readily available, it is valuable to have useful tools for simulation of synthetic data.
+%The main contributions of this work are as follows:
+%\begin{enumerate}
+    %%% Added by Jeff - 2019.04.26 %%%
+    %\item Propose a framework for an effective evolutionary based biclustering algorithm using NSGA-II and bicluster fitness functions.
+ %   \item Provide a ``drag and drop'' toolset for turning internal bicluster quality measures into an effective evolutionary based biclustering algorithm using NSGA-II.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   % \item Present a methodology for generating a gold standard benchmark biclustering datasets. These simulate trend-preserving datasets that can be replicated and transformed to different structures to evaluate performance of biclustering algorithms.
+  %  \item Improve the robustness of existing validation metrics. 
+%
+%\end{enumerate}
+
+%%% Added by Jeff - 2019.04.26 %%%
+%The results obtained demonstrate the effectiveness of the MOEA approach for discovering useful biclusters on a varied set of synthetic datasets when applied with the average Spearman's rho (ASR) measure as the fitness function.
+The results obtained demonstrate the potential of internal bicluster quality measures to guide NSGA-II to high quality biclusters, especially when applied with Average Spearman's Rho as the fitness function. The python implementation of the method is available on our GitHub repository: https://github.com/clslabMSU.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

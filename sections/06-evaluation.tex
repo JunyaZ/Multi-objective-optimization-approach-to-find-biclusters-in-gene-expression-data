@@ -1,0 +1,86 @@
+\section{Evaluation Results and Analysis}
+\label{sec:eval}
+Though multiple EBMs have been proposed in literature, only very few are readily available for implementation such as Evo-Bexpa. 
+The Evolutionary Biclustering based in Expression Patterns (Evo-Bexpa) method ~\cite{pontes2013configurable} combines four criterion (transposed virtual error (VE$^T$), bicluster volume, overlap, gene variance) into a single aggregate objective function by a weighted summation. The configuration of the weights is based on the domain application. For superior performance, it needs to incorporate user preferences based on some prior knowledge regarding the results.
+
+For the empirical evaluation, other non-EBMs with readily available implementation are utilized for comparison. They are briefly described in Table~\ref{tab:algsummary}. 
+These include Cheng \& Church (CC) \cite{cheng2000biclustering}, Iterative Signature Algorithm (ISA) \cite{bergmann2003iterative}, Order-Preserving Submatrices Algorithm (OPSM) \cite{ben2003discovering}, Factor Analysis for Bicluster Acquisition (FABIA)~\cite{hochreiter2010fabia}, Penalized Plaid Model (PPM)~\cite{chekouo2015thepenalized}, UniBic~\cite{wang2016unibic}, and Biclustering based on PAttern Mining Software (BicPAMS)~\cite{henriques2017bicpams}.
+Given that UniBic is an extension of the graph-based biclustering method QUBIC~\cite{zhang2016qubic}, we did not include QUBIC in the experiments, though it's implementation was publicly available. Likewise, only BicPAMS~\cite{henriques2017bicpams} is included given that it is the most recent iteration in a series of pattern mining biclustering algorithms beginning with BicPAM \cite{henriques2014bicpam}.
+Thus, the MOEA biclustering method is compared to eight other methods using three sets of synthetic data.
+%, BicSPAM \cite{henriques2014bicspam}, BiP \cite{henriques2015biclustering}, and BicNET \cite{henriques2016bicnet}).
+
+ \input{tables/algorithms-used.tex}
+
+\subsubsection{Assessment of Enhanced Match Scores and New Benchmark Data}
+
+Both the existing metrics and new symmetric metrics are applied on the existing UniBic benchmark data across the nine varied biclustering methods to assess the benefit of the enhanced match scores. The MOEA is computed is using the ASR fitness function: MOEA-ASR. 
+
+To provide a context for assessing the performance of the methods and metrics, Table \ref{tab:description of Synthetic Datasets} gives an overview of the different datasets utilized, the range of the true biclusters with each set as well as the mean number of biclusters returned by each method. Both EBMs (Evo-Bexpa and MOEA-ASR) yield the least number of biclusters (5) (Table~\ref{tab:description of Synthetic Datasets}). Note that this can be readily changed by a user set parameter to obtain as many biclusters as desired. Run time was the influential factor for the preliminary experiments reported in this paper. BicPAMS notably produces a large number of biclusters.
+
+
+\begin{table}[!t]
+\centering
+   \caption{Description of Synthetic  Datasets and Mean Number of Biclusters per Algorithm}
+   \label{tab:description of Synthetic Datasets}
+\scalebox{0.8}{\begin{tabular}{lcc|cccc}
+\toprule
+% \multicolumn{3}{l}{ }       & \multicolumn{6}{c}{Mean Number of Biclusters returned by each Algorithm}                     &  \\
+Datasets    & \makecell {Range of BC \\in Gnd Truth$^1$}     & \makecell{No.of\\Datasets}   & BicPAMS  & ISA & OPSM& UniBic   \\  \midrule
+Dale Narrow TP	&	3	&	15	&	1527	&	116	&	13	&	98	 \\	
+Dale Square TP	&	 {[}3, 5{]} 	&	15	&	1528	&	55	&	10	&	50		  \\ \midrule	
+UniBic Narrow  	&	3	&	9	&	321	&	64	&	11	&	96		  \\	
+UniBic Overlap 	&	3	&	20	&	557	&	29	&	14	&	53		  \\	
+UniBic Type I	&	 {[}3, 5{]} 	&	15	&	243	&	48	&	10	&	42		  \\	
+UniBic Type II 	&	 {[}3, 5{]} 	&	15	&	746	&	38	&	10	&	47		  \\	
+UniBic Type III  	&	 {[}3, 5{]} 	&	15	&	712	&	49	&	9	&	62		  \\	
+UniBic Type IV 	&	 {[}3, 5{]} 	&	15	&	768	&	55	&	9	&	41		  \\	
+UniBic Type V	&	 {[}3, 5{]} 	&	15	&	354	&	33	&	10	&	56		  \\	
+UniBic Type VI  	&	 {[}3, 5{]} 	&	15	&	374	&	56	&	10	&	43		  \\ \midrule	
+FABIA Noise	&	10	&	100	&	209	&	81	&	10	&	98		  \\	
+FABIA Noise Free 	&	10	&	100	&	4070	&	25	&	18	&	17		\\\bottomrule	
+\end{tabular}}
+\begin{tablenotes}
+		\tiny
+		\item $^{1}$ Mean number of biclusters in ground truth data;
+% 		$^{2}$ The TPC score computed on the ground truth biclusters. 
+	    $^{2}$ The Number of biclusters of algorithm CC, Evo-Bexpa, FABIA, MOEA, and PPM  were required as a user parameter and set as a constant. Thus, the mean number of biclusters that per algorithm returned is 20, 5, 10, 5 and 10.
+	\end{tablenotes}
+\end{table}
+% =========================================================
+The enhanced match scores (symmetric recovery and relevance) differ from the one dimensional recovery and relevance scores (Table \ref{tab:Before Unibic table}). Depending on the algorithm, it could be higher or lower. The best performing method based on each metric differed in some cases: Narrow, column constant, and shift-scale. The advantage of using the symmetric scores is that it provides a more robust perspective on the performance of the methods.
+Table~\ref{tab:Before Unibic table} also illustrates that the MOEA-ASR has high symmetric relevance score on most of the data types, indicating a good performance in identifying meaningful biclusters. The recovery score is relatively lower, given that it retrieves the least number of biclusters. 
+
+Regarding the new trend preserving benchmark data comparison, Fig. \ref{fig:TP and unibic compara} illustrates the performance of the biclustering algorithms on both types of TP datasets (Dale Narrow TP) in comparison to the UniBic (Narrow and Square TP) datasets. The UniBic datasets have a wider range of performance, an indicator that the Dale TP datasets generalize well (Fig. \ref{fig:TP and unibic compara}). Intuitively, the performance on the new benchmark data (Dale TP) is poorer given the higher difficulty level compared to the more predictable datasets. 
+
+
+\input{figures/num_bics.tex}
+\input{figures/results_before_enhancement.tex}
+\input{figures/nsga-comparison.tex}
+
+
+
+\subsubsection{Performance on FABIA benchmark data}
+Performance of the biclustering algorithms on the FABIA datasets was much lower compared to the other benchmark data (Fig.~\ref{fig:Before enhancement FIBIA}). This probably indicates increased level of difficulty of the dataset. The MOEA-ASR out performed the other methods in terms of symmetric relevance score on the noisy datasets. PPM had the best performance on the noise-free datasets based on both symmetric relevance and recovery score. 
+
+\subsubsection{Comparative Performance of MOEA across multiple measures}
+All results presented thus far have utilized MOEA with the ASR internal validation measure as the fitness function. 
+Figs. \ref{fig: ALL datasets NSGA_aa} and \ref{fig: ALL datasets NSGA} provide an insight into the performance of the MOEA with respect to different fitness functions (ASR, SCS, VE$^T$). Both ASR and SCS measures perform well on the narrow and trending preserving (both square and narrow) datasets (Fig.~\ref{fig: ALL datasets NSGA_aa}). Note that the overall scores are low due to only 5 biclusters being retrieved and evaluated. 
+Fig.~\ref{fig: ALL datasets NSGA}(e) shows that VE$^T$ outperforms the other measures on Type III (row constant) and Type V (shift) datasets in terms of symmetric relevance. SCS yields the highest scores on the FABIA noise-free datasets while ASR is the best performer on the noisy datasets. VE$^T$ has the shortest run time and least computational complexity.  Future work will focus on an ensemble of these measures as a fitness function. 
+
+
+
+%\subsubsection{Extension to Real Data}
+%It is difficult to verify that the synthetic data generation method proposed in this paper produces biclusters that are consistent with the biologically significant biclusters found in gene expression data. Such biclusters might be meaningful in a biological context, but not follow the assumed model underlying our biclustering methodology. In the contrapositive, the fact that a set of genes and samples conform to this model does not inherently make the bicluster meaningful. In light of these observations, the best we can do in assessing the realism of these synthetic biclusters is verifying that they indeed follow the assumed trend-preserving model that is prevalent in the literature, as shown in Figure~\ref{fig:biclustermodels}.
+
+
+%\input{figures/realgen_table.tex}
+%{\color{red}{
+%\subsubsection*{JZ:Real Data Analysis}
+%We consider three real gene expression datasets that have been provided
+%by the Broad Institute and were previously analyzed by Hochreiter et.al in \cite{hochreiter2010fabia}. Our goal is to analyze how well our MOEA algorithm are able to re-identify gene expression biclusters without any other information.
+
+
+%The description of real gene datasets and the mean number of returned bicluster by using different algorithms shown in Table \ref{tab:description of real gene }
+%(A) ‘breast cancer’ dataset as aimed at a predictive gene signature for the outcome of a breast cancer therapy.We removed the outlier array S54 that leads to a dataset with 97 samples and 1213 genes.
+%(B) The ‘multiple tissue types’ dataset (Su et al., 2002) are gene expression profiles from human cancer samples from diverse tissues and cell lines. The dataset contains 102 samples with 5565 genes.(C) The ‘diffuse large-B-cell lymphoma (DLBCL)’ dataset was aimed at predicting the survival after chemotherapy. It contains 180 samples and 661 genes.}}
+
